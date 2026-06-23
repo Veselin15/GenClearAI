@@ -1,0 +1,34 @@
+FROM python:3.12-slim
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+
+# Pin the exact release + SHA256 published with v0.6.4-demo. The build fails
+# if the download is tampered with or swapped.
+ARG TOOL_URL=https://github.com/allenk/VeoWatermarkRemover/releases/download/v0.6.4-demo/GeminiWatermarkTool-Linux-x64-Video.zip
+ARG TOOL_SHA256=dd6d27547cee59555a87e720c8ef41c68373d78f94356cca31ab817b43d74f9b
+
+# ffmpeg + runtime libs the bundled NCNN/OpenCV may dynamically link, plus
+# tooling for the verified download and gosu to drop root.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ffmpeg libmagic1 curl unzip ca-certificates \
+        libgomp1 libgl1 libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /opt/veo && cd /opt/veo \
+    && curl -fsSL -o tool.zip "$TOOL_URL" \
+    && echo "${TOOL_SHA256}  tool.zip" | sha256sum -c - \
+    && unzip -o tool.zip && rm tool.zip \
+    && chmod +x GeminiWatermarkTool-Video
+
+WORKDIR /srv
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY app ./app
+
+RUN useradd -u 10001 -m appuser && mkdir -p /data/scratch && chown -R appuser:appuser /data
+USER appuser
+
+# Single worker (concurrency 1) with embedded beat for the cleanup cron.
+# Beat's schedule DB must live on a writable path (rootfs is read-only).
+CMD ["celery", "-A", "app.celery_app", "worker", "-B", \
+     "--concurrency=1", "--schedule=/tmp/celerybeat-schedule", "--loglevel=info"]

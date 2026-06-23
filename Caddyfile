@@ -1,0 +1,29 @@
+# Dev/default: plain HTTP on :80.
+#
+# For production, replace ":80" with your domain to get automatic HTTPS, e.g.:
+#   watermark.example.com {
+#       request_body { max_size 1GB }
+#       handle /api/* { reverse_proxy api:8000 }
+#       handle /v1/* { reverse_proxy api:8000 }
+#       handle /healthz { reverse_proxy api:8000 }
+#       handle { reverse_proxy web:3000 }
+#   }
+
+:80 {
+	request_body {
+		max_size 1GB
+	}
+
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+	handle /v1/* {
+		reverse_proxy api:8000
+	}
+	handle /healthz {
+		reverse_proxy api:8000
+	}
+	handle {
+		reverse_proxy web:3000
+	}
+}

@@ -1,0 +1,14 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+data/
+*.mp4
+*.mkv
+*.mov
+.DS_Store
+VeoWatermarkRemover-0.6.4-demo/
+frontend/node_modules/
+frontend/.next/
