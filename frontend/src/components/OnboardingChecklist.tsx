@@ -24,7 +24,7 @@ export function OnboardingChecklist({ user }: { user: User }) {
             {s.href && !s.done ? (
               <a href={s.href} className="link-accent">{s.label}</a>
             ) : (
-              <span>{s.done ? <s style={{ textDecoration: "none", opacity: 0.7 }}>{s.label}</s> : s.label}</span>
+              <span style={s.done ? { opacity: 0.7 } : undefined}>{s.label}</span>
             )}
           </li>
         ))}

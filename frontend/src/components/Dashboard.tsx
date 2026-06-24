@@ -488,7 +488,11 @@ function JobRow({
     ? (j.status === "pending" && j.eta_sec
         ? `${phase} · ready in ${fmtEta(j.eta_sec)}`
         : phase || "Processing…")
-    : (j.error_message && j.status !== "finished" ? j.error_message : meta);
+    : j.status === "skipped"
+      ? "No watermark found — credit refunded"
+      : j.status === "failed" && j.error_message
+        ? j.error_message
+        : meta;
 
   async function copyLink() {
     if (!j.download_url) return;

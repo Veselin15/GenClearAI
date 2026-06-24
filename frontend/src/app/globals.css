@@ -1315,7 +1315,6 @@ kbd {
   background-size: 200% 100%;
 }
 .compare .img-after { clip-path: inset(0 0 0 var(--pos, 50%)); }
-.compare-video video.img-after { object-fit: contain; }
 .tag-quality {
   font-size: .68rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; margin-left: 6px;
   background: rgba(20, 184, 166, 0.15); color: var(--accent-2); border: 1px solid rgba(20, 184, 166, 0.3);

@@ -7,6 +7,7 @@ export function CompareModal({ job, onClose }: { job: Job; onClose: () => void }
   const [pos, setPos] = useState(50);
   const [loaded, setLoaded] = useState(0);
   const [dragging, setDragging] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -51,18 +52,21 @@ export function CompareModal({ job, onClose }: { job: Job; onClose: () => void }
           <button type="button" className="btn btn-ghost btn-sm modal-close" onClick={onClose} aria-label="Close">✕</button>
         </div>
         <p className="muted" style={{ fontSize: ".86rem", marginBottom: 14 }}>
-          Drag the slider to compare. Right side plays your <b>actual cleaned MP4</b>.
+          Drag the slider to compare the same frame before and after cleaning.
         </p>
+        {error && (
+          <p style={{ color: "var(--danger)", fontSize: ".88rem", marginBottom: 12 }}>{error}</p>
+        )}
         <div
           ref={containerRef}
-          className="compare compare-video"
+          className="compare"
           style={{ "--pos": `${pos}%`, "--aspect": `${w} / ${h}`, cursor: dragging ? "ew-resize" : undefined } as React.CSSProperties}
           onPointerDown={() => setDragging(true)}
           onPointerMove={handlePointerMove}
           onPointerUp={() => setDragging(false)}
           onPointerLeave={() => setDragging(false)}
         >
-          {!ready && (
+          {!ready && !error && (
             <div className="compare-loading">
               <div className="spinner" />
               <span className="muted">Loading preview…</span>
@@ -74,29 +78,18 @@ export function CompareModal({ job, onClose }: { job: Job; onClose: () => void }
             src={`/v1/jobs/${job.id}/thumb/before`}
             alt="Original frame with watermark"
             onLoad={() => setLoaded((n) => n + 1)}
+            onError={() => { setError("Could not load before preview"); setLoaded((n) => n + 1); }}
             style={{ opacity: ready ? 1 : 0 }}
           />
-          {job.download_url ? (
-            <video
-              className="img-after"
-              src={job.download_url}
-              muted
-              playsInline
-              loop
-              autoPlay
-              onLoadedData={() => setLoaded((n) => n + 1)}
-              style={{ opacity: ready ? 1 : 0 }}
-            />
-          ) : (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              className="img-after"
-              src={`/v1/jobs/${job.id}/thumb/after`}
-              alt="Cleaned frame without watermark"
-              onLoad={() => setLoaded((n) => n + 1)}
-              style={{ opacity: ready ? 1 : 0 }}
-            />
-          )}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            className="img-after"
+            src={`/v1/jobs/${job.id}/thumb/after`}
+            alt="Cleaned frame without watermark"
+            onLoad={() => setLoaded((n) => n + 1)}
+            onError={() => { setError("Could not load after preview"); setLoaded((n) => n + 1); }}
+            style={{ opacity: ready ? 1 : 0 }}
+          />
           <div className="divider" />
           <div className="handle">⇄</div>
           <span className="cmp-label l">BEFORE</span>
