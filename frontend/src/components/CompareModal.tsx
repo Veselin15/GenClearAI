@@ -27,6 +27,8 @@ export function CompareModal({ job, onClose }: { job: Job; onClose: () => void }
   }, [dragging]);
 
   const ready = loaded >= 2;
+  const w = job.output_width || job.width || 16;
+  const h = job.output_height || job.height || 9;
   const res = job.output_width && job.output_height
     ? `${job.output_width}×${job.output_height}`
     : job.width && job.height
@@ -54,7 +56,7 @@ export function CompareModal({ job, onClose }: { job: Job; onClose: () => void }
         <div
           ref={containerRef}
           className="compare compare-video"
-          style={{ "--pos": `${pos}%`, cursor: dragging ? "ew-resize" : undefined } as React.CSSProperties}
+          style={{ "--pos": `${pos}%`, "--aspect": `${w} / ${h}`, cursor: dragging ? "ew-resize" : undefined } as React.CSSProperties}
           onPointerDown={() => setDragging(true)}
           onPointerMove={handlePointerMove}
           onPointerUp={() => setDragging(false)}

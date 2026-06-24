@@ -318,7 +318,7 @@ p { margin: 0 0 1em; }
 }
 @keyframes modal-bg-in { from { opacity: 0; } }
 .modal { width: 100%; max-width: 440px; animation: modal-in .3s var(--ease-spring); }
-.modal.wide { max-width: 720px; }
+.modal.wide { max-width: 780px; }
 .modal h3 { font-size: 1.2rem; }
 @keyframes modal-in {
   from { transform: scale(.94) translateY(12px); opacity: 0; }
@@ -332,10 +332,10 @@ p { margin: 0 0 1em; }
 }
 
 .compare {
-  position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 12px;
-  overflow: hidden; background: #000; user-select: none;
+  position: relative; width: 100%; aspect-ratio: var(--aspect, 16 / 9); border-radius: 12px;
+  overflow: hidden; background: #000; user-select: none; max-height: 70vh;
 }
-.compare img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; display: block; }
+.compare img, .compare video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; display: block; }
 .compare .img-after { clip-path: inset(0 0 0 var(--pos, 50%)); }
 .compare .divider { position: absolute; top: 0; bottom: 0; left: var(--pos, 50%); width: 2px; background: #fff; box-shadow: 0 0 10px rgba(0,0,0,.7); pointer-events: none; }
 .compare .handle {
@@ -1314,8 +1314,8 @@ kbd {
   background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%);
   background-size: 200% 100%;
 }
-.compare .img-after { clip-path: inset(0 0 0 var(--pos, 50%)); object-fit: cover; }
-.compare-video video.img-after { object-fit: cover; }
+.compare .img-after { clip-path: inset(0 0 0 var(--pos, 50%)); }
+.compare-video video.img-after { object-fit: contain; }
 .tag-quality {
   font-size: .68rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; margin-left: 6px;
   background: rgba(20, 184, 166, 0.15); color: var(--accent-2); border: 1px solid rgba(20, 184, 166, 0.3);

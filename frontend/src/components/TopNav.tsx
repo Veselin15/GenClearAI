@@ -60,21 +60,25 @@ export function TopNav({ user, variant = "landing" }: NavProps) {
 function AppNavLinks() {
   const pathname = usePathname();
   const links = [
-    { href: "/", label: "Upload" },
+    { href: "/app#upload", label: "Upload" },
     { href: "/app", label: "Dashboard" },
     { href: "/account", label: "Account" },
   ];
   return (
     <nav className="nav-links nav-desktop" aria-label="App navigation">
-      {links.map((l) => (
-        <Link
-          key={l.href}
-          href={l.href}
-          style={pathname === l.href ? { color: "var(--text)", background: "rgba(255,255,255,.06)" } : undefined}
-        >
-          {l.label}
-        </Link>
-      ))}
+      {links.map((l) => {
+        const base = l.href.split("#")[0];
+        const active = pathname === base || (base === "/app" && pathname === "/app");
+        return (
+          <Link
+            key={l.href}
+            href={l.href}
+            style={active && l.label !== "Upload" ? { color: "var(--text)", background: "rgba(255,255,255,.06)" } : undefined}
+          >
+            {l.label}
+          </Link>
+        );
+      })}
     </nav>
   );
 }
