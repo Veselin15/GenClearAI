@@ -60,10 +60,14 @@ def _maybe_daily_bonus(user: User) -> int:
         return 0
     now = datetime.now(timezone.utc)
     last = user.last_credit_grant
-    if last is not None and (now - last) < timedelta(hours=24):
+    if last is not None and (now - last) < timedelta(hours=20):
         return 0
-    if last is not None and (now.date() - last.date()).days == 1:
-        user.streak_days += 1
+    if last is not None:
+        gap = (now.date() - last.date()).days
+        if gap == 1:
+            user.streak_days += 1
+        elif gap >= 2:
+            user.streak_days = 1
     else:
         user.streak_days = 1
     user.credits += settings.daily_bonus_credits
@@ -123,8 +127,14 @@ async def login(
         raise HTTPException(401, "invalid email or password")
     if not user.is_active:
         raise HTTPException(403, "account disabled")
+    granted = _maybe_daily_bonus(user)
+    if granted:
+        await db.commit()
+        await db.refresh(user)
     issue_session(response, user.id)
-    return await _me(user, db)
+    out = await _me(user, db)
+    out.daily_bonus = granted
+    return out
 
 
 @router.post("/auth/logout", status_code=204)

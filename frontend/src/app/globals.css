@@ -1290,6 +1290,7 @@ kbd {
 }
 .docs-method-post { background: rgba(20, 184, 166, 0.15); color: var(--accent); }
 .docs-method-get { background: rgba(56, 189, 248, 0.15); color: var(--info); }
+.docs-method-delete { background: rgba(248, 113, 113, 0.15); color: var(--danger); }
 .docs-method-ws { background: rgba(251, 191, 36, 0.15); color: var(--warn); }
 .docs-path {
   font-family: ui-monospace, monospace; font-size: .82rem; color: var(--accent);

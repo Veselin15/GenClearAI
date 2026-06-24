@@ -12,6 +12,12 @@ const ENDPOINTS = [
   },
   {
     method: "GET",
+    path: "/v1/jobs",
+    title: "List your jobs",
+    desc: "Returns your recent jobs with status, progress, and download links.",
+  },
+  {
+    method: "GET",
     path: "/v1/jobs/{id}",
     title: "Job status",
     desc: "Poll until status is finished, failed, or expired.",
@@ -21,6 +27,12 @@ const ENDPOINTS = [
     path: "/v1/jobs/{id}/download",
     title: "Download clean MP4",
     desc: "Use download_url from the finished job response.",
+  },
+  {
+    method: "DELETE",
+    path: "/v1/jobs/{id}",
+    title: "Delete a job",
+    desc: "Cancel pending jobs or remove completed job records.",
   },
   {
     method: "WS",

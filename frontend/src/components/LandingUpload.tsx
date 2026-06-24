@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, getMe } from "@/lib/api";
@@ -26,6 +25,15 @@ export function LandingUpload() {
   useEffect(() => {
     getMe().then(() => setAuthed(true)).catch(() => setAuthed(false));
   }, []);
+
+  useEffect(() => {
+    if (!showAuth) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape" && !authLoading) setShowAuth(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showAuth, authLoading]);
 
   const pick = useCallback((f: File | null) => {
     if (!f) return;
