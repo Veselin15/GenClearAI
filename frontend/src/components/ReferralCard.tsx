@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { User } from "@/lib/types";
 import { useToast } from "./Toast";
+import { CardTitle } from "./CardTitle";
 
 export function ReferralCard({ user }: { user: User }) {
   const { toast } = useToast();
@@ -24,9 +25,9 @@ export function ReferralCard({ user }: { user: User }) {
 
   return (
     <div className="card referral-card">
-      <h3>🎁 Earn free credits</h3>
-      <p className="muted" style={{ fontSize: ".9rem" }}>
-        Invite a creator — you <b>both</b> get 2 bonus credits when they sign up.
+      <CardTitle title="Earn free credits" icon="🎁" subtitle="+2 each when friends join" />
+      <p className="muted" style={{ fontSize: ".9rem", marginBottom: 12 }}>
+        Invite a creator — you <b>both</b> get 2 bonus credits.
         {user.referral_count > 0 && ` (${user.referral_count} joined so far)`}
       </p>
       <div className="referral">

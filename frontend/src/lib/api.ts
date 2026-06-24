@@ -8,6 +8,16 @@ export class ApiError extends Error {
   }
 }
 
+const FRIENDLY_ERRORS: Record<number, string> = {
+  401: "Session expired — please sign in again",
+  402: "No credits remaining — upgrade or come back tomorrow",
+  413: "File too large — max 1 GB",
+  429: "Too many jobs in progress — wait for one to finish",
+  500: "Something went wrong on our end — try again shortly",
+  502: "Server is temporarily unreachable — try again in a moment",
+  503: "Service unavailable — we're working on it",
+};
+
 export async function api<T>(
   path: string,
   opts: Omit<RequestInit, "body"> & { body?: unknown } = {}
@@ -26,14 +36,21 @@ export async function api<T>(
       init.body = JSON.stringify(body);
     }
   }
-  const res = await fetch(`${API_BASE}${path}`, init);
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, init);
+  } catch {
+    throw new ApiError("Network error — check your connection", 0);
+  }
+
   let data: unknown = null;
   const ct = res.headers.get("content-type") ?? "";
   if (ct.includes("application/json")) {
     data = await res.json();
   }
   if (!res.ok) {
-    let msg: string = res.statusText;
+    let msg: string = FRIENDLY_ERRORS[res.status] || res.statusText;
     if (data && typeof data === "object" && "detail" in data) {
       const d = (data as { detail: unknown }).detail;
       if (typeof d === "string") msg = d;
@@ -50,6 +67,27 @@ export function getMe() {
 
 export function getStats() {
   return api<import("./types").Stats>("/api/stats");
+}
+
+export function getActivity() {
+  return api<import("./types").ActivityItem[]>("/api/activity");
+}
+
+export function getUserSummary() {
+  return api<import("./types").UserSummary>("/api/me/summary");
+}
+
+export function expiresIn(iso: string | null): string | null {
+  if (!iso) return null;
+  const ms = new Date(iso).getTime() - Date.now();
+  if (ms <= 0) return "expiring soon";
+  const h = Math.floor(ms / 3600000);
+  if (h < 1) {
+    const m = Math.ceil(ms / 60000);
+    return `${m}m left`;
+  }
+  if (h < 24) return `${h}h left`;
+  return `${Math.floor(h / 24)}d left`;
 }
 
 export function getJobs(limit = 50) {
@@ -89,8 +127,9 @@ export function fmtDuration(sec: number | null | undefined): string | null {
 export function processingPhase(status: string, progress: number): string {
   if (status === "pending") return "Waiting in queue";
   if (status !== "processing") return "";
-  if (progress < 8) return "Detecting watermark…";
-  if (progress < 90) return "Removing watermark…";
+  if (progress < 5) return "Analyzing video…";
+  if (progress < 15) return "Detecting watermark…";
+  if (progress < 85) return "Removing watermark…";
   return "Finalizing export…";
 }
 
@@ -113,6 +152,6 @@ export function notifyDone(title: string, body: string) {
   if (typeof window === "undefined" || !("Notification" in window)) return;
   if (Notification.permission !== "granted") return;
   try {
-    new Notification(title, { body, icon: "/favicon.ico" });
+    new Notification(title, { body, icon: "/favicon.svg" });
   } catch { /* ignore */ }
 }

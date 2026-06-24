@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,7 +16,20 @@ from ..db import get_db
 from ..engagement import build_engagement
 from ..models import Job, JobStatus, Plan, User
 from ..queue_util import avg_processing_sec, queue_depth
-from ..schemas import ApiKeyOut, BadgeOut, LoginIn, MeOut, OnboardingOut, RegisterIn, StatsOut, UpdateMeIn
+from ..rate_limit import rate_limit_ip
+from ..schemas import (
+    ActivityItem,
+    ApiKeyOut,
+    BadgeOut,
+    LevelOut,
+    LoginIn,
+    MeOut,
+    OnboardingOut,
+    RegisterIn,
+    StatsOut,
+    UpdateMeIn,
+    UserSummaryOut,
+)
 from ..security import generate_api_key, generate_referral_code, hash_api_key
 
 settings = get_settings()
@@ -30,6 +43,7 @@ async def _me(user: User, db: AsyncSession) -> MeOut:
     out.badges = [BadgeOut(**b) for b in eng["badges"]]
     out.onboarding = OnboardingOut(**eng["onboarding"])
     out.referral_count = eng["referral_count"]
+    out.level = LevelOut(**eng["level"])
     return out
 
 
@@ -58,7 +72,13 @@ def _maybe_daily_bonus(user: User) -> int:
 
 
 @router.post("/auth/register", response_model=MeOut, status_code=201)
-async def register(payload: RegisterIn, response: Response, db: AsyncSession = Depends(get_db)):
+async def register(
+    payload: RegisterIn,
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+):
+    rate_limit_ip(request, "register", settings.register_rate_limit)
     email = payload.email.lower()
     if await db.scalar(select(User.id).where(User.email == email)):
         raise HTTPException(409, "an account with this email already exists")
@@ -91,7 +111,13 @@ async def register(payload: RegisterIn, response: Response, db: AsyncSession = D
 
 
 @router.post("/auth/login", response_model=MeOut)
-async def login(payload: LoginIn, response: Response, db: AsyncSession = Depends(get_db)):
+async def login(
+    payload: LoginIn,
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+):
+    rate_limit_ip(request, "login", settings.login_rate_limit)
     user = await db.scalar(select(User).where(User.email == payload.email.lower()))
     if user is None or not verify_password(payload.password, user.password_hash):
         raise HTTPException(401, "invalid email or password")
@@ -161,3 +187,51 @@ async def stats(db: AsyncSession = Depends(get_db)):
         queue_depth=depth,
         cache_hits=cache_hits or 0,
     )
+
+
+@router.get("/me/summary", response_model=UserSummaryOut)
+async def me_summary(user: User = Depends(current_user), db: AsyncSession = Depends(get_db)):
+    total = await db.scalar(
+        select(func.coalesce(func.sum(Job.processing_sec), 0)).where(
+            Job.user_id == user.id, Job.status == JobStatus.finished
+        )
+    )
+    cache_hits = await db.scalar(
+        select(func.count()).select_from(Job).where(
+            Job.user_id == user.id, Job.from_cache.is_(True)
+        )
+    )
+    finished = await db.scalar(
+        select(func.count()).select_from(Job).where(
+            Job.user_id == user.id, Job.status == JobStatus.finished
+        )
+    )
+    return UserSummaryOut(
+        total_processing_sec=round(float(total or 0), 1),
+        cache_hits=cache_hits or 0,
+        finished_jobs=finished or 0,
+    )
+
+
+@router.get("/activity", response_model=list[ActivityItem])
+async def activity(db: AsyncSession = Depends(get_db)):
+    """Anonymized recent completions for social proof on the landing page."""
+    rows = await db.scalars(
+        select(Job)
+        .where(Job.status == JobStatus.finished, Job.finished_at.is_not(None))
+        .order_by(Job.finished_at.desc())
+        .limit(15)
+    )
+    out: list[ActivityItem] = []
+    for j in rows:
+        res = f"{j.width}×{j.height}" if j.width and j.height else None
+        out.append(
+            ActivityItem(
+                watermark_type=j.watermark_type,
+                resolution=res,
+                from_cache=j.from_cache,
+                processing_sec=float(j.processing_sec) if j.processing_sec else None,
+                at=j.finished_at,
+            )
+        )
+    return out

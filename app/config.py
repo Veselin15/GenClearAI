@@ -1,7 +1,11 @@
+import logging
+import warnings
 from functools import lru_cache
 from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_log = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -63,8 +67,16 @@ class Settings(BaseSettings):
     referral_bonus: int = 2                      # credits to BOTH parties on a referral
     pro_queue_priority: int = 9                # Celery priority 0-9 (higher = sooner)
 
+    # --- rate limiting ---
+    login_rate_limit: int = 10                  # max login attempts per minute per IP
+    register_rate_limit: int = 5                # max registrations per minute per IP
+    upload_rate_limit: int = 20                 # max uploads per minute per user
+
     # --- previews ---
-    thumb_width: int = 480                       # smaller = faster ffmpeg previews
+    thumb_width: int = 1080                     # compare previews — match source up to thumb_max
+    thumb_max_width: int = 1280
+    output_crf: int = 14                        # high-quality repair encode if res drifts
+    ensure_output_resolution: bool = True       # upscale/re-encode if tool shrinks frames
 
     @property
     def cors_origin_list(self) -> list[str]:
@@ -75,4 +87,11 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    s = Settings()
+    if s.secret_key == "change-me-in-production":
+        warnings.warn(
+            "SECRET_KEY is the insecure default — set a strong random value "
+            "via the SECRET_KEY environment variable before deploying",
+            stacklevel=2,
+        )
+    return s

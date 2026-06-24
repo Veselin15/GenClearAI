@@ -15,7 +15,7 @@ class RegisterIn(BaseModel):
 
 class LoginIn(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(min_length=1, max_length=128)
 
 
 class UpdateMeIn(BaseModel):
@@ -36,6 +36,15 @@ class OnboardingOut(BaseModel):
     complete: bool
 
 
+class LevelOut(BaseModel):
+    level_name: str
+    level_icon: str
+    level_min: int
+    level_progress: int
+    videos_to_next: int
+    next_level_name: str | None = None
+
+
 class MeOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -53,6 +62,21 @@ class MeOut(BaseModel):
     badges: list[BadgeOut] = []
     onboarding: OnboardingOut | None = None
     referral_count: int = 0
+    level: LevelOut | None = None
+
+
+class ActivityItem(BaseModel):
+    watermark_type: str | None = None
+    resolution: str | None = None
+    from_cache: bool = False
+    processing_sec: float | None = None
+    at: datetime
+
+
+class UserSummaryOut(BaseModel):
+    total_processing_sec: float
+    cache_hits: int
+    finished_jobs: int
 
 
 class ApiKeyOut(BaseModel):
@@ -87,6 +111,8 @@ class JobOut(BaseModel):
     duration_sec: float | None = None
     width: int | None = None
     height: int | None = None
+    output_width: int | None = None
+    output_height: int | None = None
     created_at: datetime
     finished_at: datetime | None = None
     expires_at: datetime | None = None
@@ -97,3 +123,4 @@ class JobOut(BaseModel):
     queue_position: int | None = None
     eta_sec: int | None = None
     has_preview: bool = False
+    quality_matched: bool | None = None

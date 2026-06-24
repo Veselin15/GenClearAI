@@ -1,8 +1,8 @@
-import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 import { TopNav } from "@/components/TopNav";
 import { Dashboard } from "@/components/Dashboard";
 import type { User } from "@/lib/types";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 async function fetchMe(cookie: string): Promise<User | null> {
   const base = process.env.INTERNAL_API_URL ?? "http://api:8000";
@@ -27,9 +27,9 @@ export default async function AppPage() {
   if (!user) redirect("/login");
 
   return (
-    <>
+    <div className="app-shell">
       <TopNav user={user} variant="app" />
       <Dashboard initialUser={user} />
-    </>
+    </div>
   );
 }

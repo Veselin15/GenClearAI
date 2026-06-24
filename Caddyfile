@@ -3,6 +3,7 @@
 # For production, replace ":80" with your domain to get automatic HTTPS, e.g.:
 #   watermark.example.com {
 #       request_body { max_size 1GB }
+#       encode gzip zstd
 #       handle /api/* { reverse_proxy api:8000 }
 #       handle /v1/* { reverse_proxy api:8000 }
 #       handle /healthz { reverse_proxy api:8000 }
@@ -14,6 +15,8 @@
 		max_size 1GB
 	}
 
+	encode gzip zstd
+
 	handle /api/* {
 		reverse_proxy api:8000
 	}
@@ -21,6 +24,15 @@
 		reverse_proxy api:8000
 	}
 	handle /healthz {
+		reverse_proxy api:8000
+	}
+	handle /docs* {
+		reverse_proxy api:8000
+	}
+	handle /openapi.json {
+		reverse_proxy api:8000
+	}
+	handle /redoc {
 		reverse_proxy api:8000
 	}
 	handle {

@@ -2,10 +2,12 @@ import asyncio
 import contextlib
 import hashlib
 import json
+import logging
 import os
 import re
 import uuid
 from datetime import datetime, timedelta, timezone
+from typing import Literal
 
 import redis.asyncio as redis_async
 from fastapi import (
@@ -96,14 +98,23 @@ def _with_links(out: JobOut, job: Job) -> JobOut:
     if job.status == JobStatus.finished:
         out.download_url = f"/v1/jobs/{job.id}/download?token={make_download_token(job.id)}"
     out.has_preview = bool(job.thumb_after)
+    if job.width and job.height and job.output_width and job.output_height:
+        out.quality_matched = (
+            job.output_width >= job.width and job.output_height >= job.height
+        )
+    elif job.status == JobStatus.finished and job.width:
+        out.quality_matched = True
     return out
 
 
 def _stream_object(key: str, media_type: str, filename: str | None = None):
     body = storage.open_read_stream(key)
-    headers = {"X-Content-Type-Options": "nosniff"}
+    headers: dict[str, str] = {"X-Content-Type-Options": "nosniff"}
     if filename:
-        headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+        safe_name = filename.replace('"', "'")
+        headers["Content-Disposition"] = f'attachment; filename="{safe_name}"'
+    if media_type.startswith("image/"):
+        headers["Cache-Control"] = "private, max-age=3600"
     return StreamingResponse(body, media_type=media_type, headers=headers)
 
 
@@ -165,7 +176,10 @@ async def create_job(
         storage.remove_input(job_id)
         restored = storage.restore_from_cache(sha, job_id)
         prior = await db.scalar(
-            select(Job).where(Job.sha256 == sha, Job.status == JobStatus.finished).limit(1)
+            select(Job)
+            .where(Job.sha256 == sha, Job.status == JobStatus.finished)
+            .order_by(Job.finished_at.desc())
+            .limit(1)
         )
         now = datetime.now(timezone.utc)
         job = Job(
@@ -175,6 +189,8 @@ async def create_job(
             thumb_before=restored.get("thumb_before.jpg"),
             thumb_after=restored.get("thumb_after.jpg"),
             watermark_type=prior.watermark_type if prior else None,
+            output_width=prior.output_width if prior else meta["width"],
+            output_height=prior.output_height if prior else meta["height"],
             finished_at=now,
             expires_at=now + timedelta(hours=settings.result_ttl_hours),
             **common,
@@ -282,12 +298,10 @@ async def delete_job(
 @router.get("/jobs/{job_id}/thumb/{which}")
 async def thumbnail(
     job_id: uuid.UUID,
-    which: str,
+    which: Literal["before", "after"],
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    if which not in ("before", "after"):
-        raise HTTPException(404, "not found")
     job = await _get_owned(db, job_id, user)
     key = job.thumb_before if which == "before" else job.thumb_after
     if not key or not storage.object_exists(key):
@@ -335,7 +349,12 @@ async def job_events(websocket: WebSocket, job_id: uuid.UUID):
         async for message in pubsub.listen():
             if message["type"] != "message":
                 continue
-            data = json.loads(message["data"])
+            try:
+                data = json.loads(message["data"])
+            except (ValueError, TypeError):
+                continue
+            if not isinstance(data, dict):
+                continue
             await websocket.send_json(data)
             if data.get("status") in _TERMINAL_VALUES:
                 break

@@ -113,6 +113,8 @@ class Job(Base):
     duration_sec: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
     width: Mapped[int | None] = mapped_column(Integer, nullable=True)
     height: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    output_width: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    output_height: Mapped[int | None] = mapped_column(Integer, nullable=True)
     sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     # storage paths are relative to DATA_DIR so the mount can move

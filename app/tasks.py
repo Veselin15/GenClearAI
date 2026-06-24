@@ -19,6 +19,7 @@ from .db import SyncSessionLocal
 from .db_migrate import run_sync_migrations
 from .models import Job, JobEvent, JobStatus, Plan, User
 from .redis_bus import publish_event
+from .validation import video_dimensions
 
 settings = get_settings()
 
@@ -60,11 +61,13 @@ def _kill(proc: subprocess.Popen) -> None:
         proc.kill()
 
 
-def _thumb(src, dst, at_sec: float) -> bool:
+def _thumb(src, dst, at_sec: float, width: int | None = None) -> bool:
+    w = width or settings.thumb_width
+    w = min(max(w, 480), settings.thumb_max_width)
     cmd = [
         "ffmpeg", "-y", "-ss", f"{max(at_sec, 0):.2f}", "-i", str(src),
-        "-frames:v", "1", "-vf", f"scale={settings.thumb_width}:-2",
-        "-q:v", "5", str(dst),
+        "-frames:v", "1", "-vf", f"scale={w}:-2:flags=lanczos",
+        "-q:v", "2", str(dst),
     ]
     try:
         subprocess.run(cmd, capture_output=True, timeout=20, check=True)
@@ -73,13 +76,15 @@ def _thumb(src, dst, at_sec: float) -> bool:
         return False
 
 
-def _thumbs_parallel(in_path, out_path, out_dir: Path, mid: float) -> dict[str, Path]:
+def _thumbs_parallel(in_path, out_path, out_dir: Path, mid: float, source_width: int | None) -> dict[str, Path]:
+    thumb_w = source_width or settings.thumb_width
+    thumb_w = min(max(thumb_w, settings.thumb_width), settings.thumb_max_width)
     tb, ta = out_dir / "thumb_before.jpg", out_dir / "thumb_after.jpg"
     paths: dict[str, Path] = {}
     with ThreadPoolExecutor(max_workers=2) as pool:
         futures = {
-            pool.submit(_thumb, in_path, tb, mid): "thumb_before.jpg",
-            pool.submit(_thumb, out_path, ta, mid): "thumb_after.jpg",
+            pool.submit(_thumb, in_path, tb, mid, thumb_w): "thumb_before.jpg",
+            pool.submit(_thumb, out_path, ta, mid, thumb_w): "thumb_after.jpg",
         }
         for fut in as_completed(futures):
             name = futures[fut]
@@ -145,8 +150,51 @@ def _run_tool(input_path, output_path, on_progress):
     return proc.returncode, tail, state["skipped"]
 
 
+def _ensure_full_resolution(in_path: Path, out_path: Path) -> dict[str, int] | None:
+    """If the tool shrinks frames, re-encode at source resolution — identical for Free and Pro."""
+    target = video_dimensions(in_path)
+    current = video_dimensions(out_path)
+    if not target or not current:
+        return current or target
+
+    if not settings.ensure_output_resolution:
+        return current
+
+    tw, th = target["width"], target["height"]
+    cw, ch = current["width"], current["height"]
+    if cw >= tw and ch >= th:
+        return current
+
+    fixed = out_path.with_suffix(".fixed.mp4")
+    vf = f"scale={tw}:{th}:flags=lanczos"
+    cmd = [
+        "ffmpeg", "-y", "-i", str(out_path),
+        "-vf", vf,
+        "-c:v", "libx264", "-crf", str(settings.output_crf),
+        "-preset", "slow", "-pix_fmt", "yuv420p",
+        "-c:a", "copy", str(fixed),
+    ]
+    try:
+        subprocess.run(cmd, capture_output=True, timeout=600, check=True)
+        if fixed.exists() and fixed.stat().st_size > 0:
+            fixed.replace(out_path)
+            return {"width": tw, "height": th}
+    except Exception:  # noqa: BLE001
+        if fixed.exists():
+            fixed.unlink(missing_ok=True)
+    return current
+
+
 def _finish_success(session, job: Job, in_path, out_path, out_dir, code, watermark) -> None:
     """Upload result, mark finished immediately, then previews + cache."""
+    out_dims = _ensure_full_resolution(in_path, out_path)
+    if out_dims:
+        job.output_width = out_dims["width"]
+        job.output_height = out_dims["height"]
+    elif job.width and job.height:
+        job.output_width = job.width
+        job.output_height = job.height
+
     storage.write_file(storage.output_key(job.id, "result.mp4"), out_path)
     job.output_path = storage.output_key(job.id, "result.mp4")
     job.finished_at = _now()
@@ -163,7 +211,7 @@ def _finish_success(session, job: Job, in_path, out_path, out_dir, code, waterma
         session.commit()
 
     mid = float(job.duration_sec or 2) / 2
-    thumb_paths = _thumbs_parallel(in_path, out_path, out_dir, mid)
+    thumb_paths = _thumbs_parallel(in_path, out_path, out_dir, mid, job.width)
     for name, path in thumb_paths.items():
         key = storage.output_key(job.id, name)
         storage.write_file(key, path)

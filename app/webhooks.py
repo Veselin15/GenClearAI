@@ -61,9 +61,15 @@ async def listen() -> None:
             chan = message["channel"]
             if isinstance(chan, bytes):
                 chan = chan.decode()
-            job_id = chan.split(":")[1]
+            parts = chan.split(":")
+            if len(parts) < 2:
+                continue
+            try:
+                jid = uuid.UUID(parts[1])
+            except ValueError:
+                continue
             async with AsyncSessionLocal() as db:
-                job = await db.get(Job, uuid.UUID(job_id))
+                job = await db.get(Job, jid)
                 if job and job.webhook_url:
                     await deliver(job)
     finally:

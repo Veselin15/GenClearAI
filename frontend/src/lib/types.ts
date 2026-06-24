@@ -20,6 +20,15 @@ export interface Onboarding {
   complete: boolean;
 }
 
+export interface Level {
+  level_name: string;
+  level_icon: string;
+  level_min: number;
+  level_progress: number;
+  videos_to_next: number;
+  next_level_name: string | null;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -35,6 +44,15 @@ export interface User {
   badges: Badge[];
   onboarding: Onboarding | null;
   referral_count: number;
+  level: Level | null;
+}
+
+export interface ActivityItem {
+  watermark_type: string | null;
+  resolution: string | null;
+  from_cache: boolean;
+  processing_sec: number | null;
+  at: string;
 }
 
 export interface Job {
@@ -47,6 +65,8 @@ export interface Job {
   duration_sec: number | null;
   width: number | null;
   height: number | null;
+  output_width: number | null;
+  output_height: number | null;
   created_at: string;
   finished_at: string | null;
   expires_at: string | null;
@@ -56,6 +76,13 @@ export interface Job {
   queue_position: number | null;
   eta_sec: number | null;
   has_preview: boolean;
+  quality_matched: boolean | null;
+}
+
+export interface UserSummary {
+  total_processing_sec: number;
+  cache_hits: number;
+  finished_jobs: number;
 }
 
 export interface Stats {

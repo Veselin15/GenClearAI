@@ -1,6 +1,7 @@
 "use client";
 
 import type { User } from "@/lib/types";
+import { CardTitle } from "./CardTitle";
 
 export function OnboardingChecklist({ user }: { user: User }) {
   const o = user.onboarding;
@@ -14,16 +15,17 @@ export function OnboardingChecklist({ user }: { user: User }) {
   const done = steps.filter((s) => s.done).length;
 
   return (
-    <div className="card onboarding-card">
-      <div className="onboarding-head">
-        <h3>Get started</h3>
-        <span className="pill">{done}/{steps.length} done</span>
-      </div>
+    <div className="card onboarding-card" role="region" aria-label="Getting started checklist">
+      <CardTitle title="Get started" icon="✓" action={<span className="pill">{done}/{steps.length}</span>} />
       <ul className="onboarding-list">
         {steps.map((s) => (
           <li key={s.label} className={s.done ? "done" : ""}>
-            <span className="check">{s.done ? "✓" : "○"}</span>
-            {s.href && !s.done ? <a href={s.href}>{s.label}</a> : <span>{s.label}</span>}
+            <span className="check" aria-hidden>{s.done ? "✓" : "○"}</span>
+            {s.href && !s.done ? (
+              <a href={s.href} className="link-accent">{s.label}</a>
+            ) : (
+              <span>{s.done ? <s style={{ textDecoration: "none", opacity: 0.7 }}>{s.label}</s> : s.label}</span>
+            )}
           </li>
         ))}
       </ul>
