@@ -45,6 +45,17 @@ cp .env.example .env          # edit SECRET_KEY, POSTGRES_PASSWORD, S3_SECRET_KE
 docker compose up -d --build  # first build downloads + SHA256-verifies the binary
 ```
 
+`docker compose` automatically merges `docker-compose.override.yml`, which runs the
+Next.js **dev server** with your `frontend/` folder mounted — edits reload on
+`http://localhost/` without rebuilding the image. On Windows, file watching uses
+polling so changes are picked up reliably through Docker volumes.
+
+For a production-style frontend build (no hot reload), omit the override file:
+
+```bash
+docker compose -f docker-compose.yml up -d --build
+```
+
 For the live box, set `ENVIRONMENT=production` in `.env`. In production the API
 **refuses to start** with the default `SECRET_KEY` and disables the interactive
 `/docs` (override with `ENABLE_DOCS=true`). All services expose Docker

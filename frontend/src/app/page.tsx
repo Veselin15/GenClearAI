@@ -11,6 +11,7 @@ import { VideoShowcase } from "@/components/VideoShowcase";
 import { ComparisonSection } from "@/components/ComparisonSection";
 import { LandingCta } from "@/components/LandingCta";
 import { QualityPledge } from "@/components/QualityPledge";
+import { StructuredData } from "@/components/StructuredData";
 
 const FAQ = [
   {
@@ -42,10 +43,11 @@ const FAQ = [
 export default function HomePage() {
   return (
     <div className="lp-shell">
+      <StructuredData faq={FAQ} />
       <AnnouncementBar />
       <TopNav variant="landing" />
       <ActivityTicker />
-      <main className="lp">
+      <main className="lp" id="main-content">
         <LandingHero />
         <FeatureCards />
         <QualityPledge />

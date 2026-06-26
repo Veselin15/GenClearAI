@@ -41,6 +41,8 @@ class Settings(BaseSettings):
     s3_bucket: str = "genclear"
     s3_region: str = "us-east-1"
     result_ttl_hours: int = 48
+    cache_ttl_hours: int = 72                            # purge dedup cache entries after this (0 = keep forever)
+    stuck_job_grace_sec: int = 300                       # extra slack past the hard timeout before reaping orphaned jobs
 
     # --- upload limits / validation ---
     max_upload_bytes: int = 1024 * 1024 * 1024           # 1 GiB

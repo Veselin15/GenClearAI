@@ -1,4 +1,5 @@
 """Celery tasks: run the Veo binary on one clip, and sweep expired results."""
+import logging
 import os
 import re
 import signal
@@ -22,13 +23,18 @@ from .redis_bus import publish_event
 from .validation import video_dimensions
 
 settings = get_settings()
+_log = logging.getLogger(__name__)
 
 
 def _refund_credit(session, job: Job) -> None:
-    user = session.get(User, job.user_id)
-    if user and user.plan == Plan.free.value:
-        user.credits += 1
-        session.commit()
+    # Atomic increment so a refund can't race the API's credit spend or a
+    # concurrent grant. Scoped to free users — pro plans don't consume credits.
+    session.execute(
+        update(User)
+        .where(User.id == job.user_id, User.plan == Plan.free.value)
+        .values(credits=User.credits + 1)
+    )
+    session.commit()
 
 _PERCENT = re.compile(rb"(\d{1,3}(?:\.\d+)?)\s*%")
 
@@ -313,4 +319,39 @@ def cleanup_expired() -> int:
             job.thumb_before = None
             job.thumb_after = None
         session.commit()
+    purged = storage.purge_stale_cache(settings.cache_ttl_hours * 3600)
+    if rows or purged:
+        _log.info("cleanup_expired: expired %d result(s), purged %d cache entr(y/ies)", len(rows), purged)
+    return len(rows)
+
+
+@celery.task(name="app.tasks.reap_stuck_jobs")
+def reap_stuck_jobs() -> int:
+    """Recover jobs orphaned by a worker crash.
+
+    With ``task_acks_late`` a dead worker redelivers its task, but the job row is
+    already ``processing`` so ``process_job`` early-returns and the job would hang
+    forever. Anything still ``processing`` well past the hard timeout can only be
+    orphaned (the worker kills the binary at ``job_timeout_sec``), so fail it,
+    free the input, and refund the credit.
+    """
+    run_sync_migrations()
+    cutoff = _now() - timedelta(seconds=settings.job_timeout_sec + settings.stuck_job_grace_sec)
+    with SyncSessionLocal() as session:
+        rows = session.scalars(
+            select(Job).where(
+                Job.status == JobStatus.processing,
+                Job.started_at.is_not(None),
+                Job.started_at < cutoff,
+            )
+        ).all()
+        for job in rows:
+            _record(
+                session, job, JobStatus.failed,
+                error_message="worker did not finish in time; job reaped and credit refunded",
+            )
+            storage.remove_input(job.id)
+            _refund_credit(session, job)
+        if rows:
+            _log.warning("reap_stuck_jobs: reaped %d orphaned job(s)", len(rows))
     return len(rows)

@@ -32,5 +32,9 @@ celery.conf.update(
             "task": "app.tasks.cleanup_expired",
             "schedule": crontab(minute="*/15"),
         },
+        "reap-stuck-jobs": {
+            "task": "app.tasks.reap_stuck_jobs",
+            "schedule": crontab(minute="*/5"),
+        },
     },
 )

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import contextlib
 import shutil
+import time
 from functools import lru_cache
 from pathlib import Path
 from typing import BinaryIO, Iterator
@@ -257,6 +258,63 @@ def save_to_cache(sha256: str, out_dir: Path) -> None:
         src = out_dir / name
         if src.exists() and src.stat().st_size > 0:
             write_file(cache_key(sha256, name), src)
+
+
+def purge_stale_cache(max_age_sec: int) -> int:
+    """Delete content-addressed cache entries whose newest object is older than
+    ``max_age_sec``. Returns the number of cache prefixes removed.
+
+    The dedup cache holds a copy of every processed result keyed by input hash.
+    Left unbounded it grows forever and retains user content indefinitely, so we
+    expire it on a TTL just like job results. ``max_age_sec <= 0`` keeps it.
+    """
+    if max_age_sec <= 0:
+        return 0
+    cutoff = time.time() - max_age_sec
+    purged = 0
+
+    if settings.storage_backend == "local":
+        root = DATA_DIR / "cache"
+        if not root.is_dir():
+            return 0
+        for entry in root.iterdir():
+            if not entry.is_dir():
+                continue
+            try:
+                mtime = max(
+                    (f.stat().st_mtime for f in entry.iterdir()),
+                    default=entry.stat().st_mtime,
+                )
+            except OSError:
+                continue
+            if mtime < cutoff:
+                shutil.rmtree(entry, ignore_errors=True)
+                purged += 1
+        return purged
+
+    # S3: group objects by ``cache/<sha>/`` prefix, drop a prefix once its newest
+    # object has aged out.
+    s3 = _s3()
+    paginator = s3.get_paginator("list_objects_v2")
+    newest: dict[str, float] = {}
+    keys: dict[str, list[str]] = {}
+    for page in paginator.paginate(Bucket=settings.s3_bucket, Prefix="cache/"):
+        for obj in page.get("Contents", []):
+            key = obj["Key"]
+            parts = key.split("/")
+            if len(parts) < 3:
+                continue
+            prefix = "/".join(parts[:2])  # cache/<sha>
+            ts = obj["LastModified"].timestamp()
+            newest[prefix] = max(newest.get(prefix, 0.0), ts)
+            keys.setdefault(prefix, []).append(key)
+    for prefix, ts in newest.items():
+        if ts < cutoff:
+            for key in keys[prefix]:
+                with contextlib.suppress(ClientError):
+                    s3.delete_object(Bucket=settings.s3_bucket, Key=key)
+            purged += 1
+    return purged
 
 
 def restore_from_cache(sha256: str, job_id) -> dict[str, str]:

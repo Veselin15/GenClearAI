@@ -32,7 +32,7 @@
 }
 
 * { box-sizing: border-box; }
-html { height: 100%; scroll-behavior: smooth; }
+html { height: 100%; scroll-behavior: smooth; scroll-padding-top: 80px; }
 body {
   height: 100%;
   margin: 0;
@@ -1476,6 +1476,16 @@ kbd {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Skip-to-content link — hidden until focused via keyboard */
+.skip-link {
+  position: fixed; top: 12px; left: 12px; z-index: 999;
+  transform: translateY(-150%);
+  padding: 10px 16px; border-radius: 10px; font-weight: 600; font-size: .9rem;
+  color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: var(--shadow); transition: transform .18s var(--ease-out);
+}
+.skip-link:focus { transform: translateY(0); outline: 2px solid #fff; outline-offset: 2px; }
 
 /* Focus-visible rings for keyboard navigation */
 :focus-visible {

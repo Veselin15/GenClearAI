@@ -22,7 +22,7 @@ from fastapi import (
     WebSocketDisconnect,
 )
 from fastapi.responses import StreamingResponse
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
@@ -227,17 +227,25 @@ async def create_job(
         storage.remove_input(job_id)
         raise HTTPException(429, "too many jobs in progress; try again later")
 
-    if user.plan == Plan.free.value and user.credits <= 0:
-        storage.remove_input(job_id)
-        raise HTTPException(402, "no credits remaining — upgrade to keep processing")
+    # Atomically spend one credit for free users. A guarded UPDATE prevents a
+    # double-spend race where two concurrent uploads both read credits > 0 and
+    # both decrement. rowcount == 0 means another request already drained them.
+    if user.plan == Plan.free.value:
+        spent = await db.execute(
+            update(User)
+            .where(User.id == user.id, User.credits > 0)
+            .values(credits=User.credits - 1)
+        )
+        if spent.rowcount == 0:
+            await db.rollback()
+            storage.remove_input(job_id)
+            raise HTTPException(402, "no credits remaining — upgrade to keep processing")
 
     job = Job(
         id=job_id, user_id=user.id, status=JobStatus.pending,
         input_path=input_key, priority=job_priority(user), **common,
     )
     db.add(job)
-    if user.plan == Plan.free.value:
-        user.credits -= 1
     await db.commit()
     await db.refresh(job)
 
