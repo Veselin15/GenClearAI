@@ -12,6 +12,7 @@ from typing import Literal
 import redis.asyncio as redis_async
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Depends,
     File,
     Form,
@@ -25,12 +26,13 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
-from .. import storage
+from .. import storage, webhooks
 from ..auth import COOKIE_NAME, current_user, user_id_from_token
 from ..config import get_settings
 from ..db import AsyncSessionLocal, get_db
 from ..models import TERMINAL_STATUSES, Job, JobStatus, Plan, User
 from ..queue_util import estimate_wait_sec, job_priority, jobs_ahead
+from ..rate_limit import check_rate_limit
 from ..redis_bus import channel
 from ..schemas import JobCreateResponse, JobOut
 from ..security import (
@@ -120,11 +122,15 @@ def _stream_object(key: str, media_type: str, filename: str | None = None):
 
 @router.post("/jobs", status_code=201, response_model=JobCreateResponse)
 async def create_job(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     webhook_url: str | None = Form(None),
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    # Per-user upload throttle (independent of the pending-jobs back-pressure below).
+    check_rate_limit(f"upload:{user.id}", settings.upload_rate_limit)
+
     if webhook_url and not is_safe_webhook_url(webhook_url):
         raise HTTPException(400, "webhook_url must be a public https endpoint")
 
@@ -198,6 +204,11 @@ async def create_job(
         db.add(job)
         user.videos_processed += 1
         await db.commit()
+        # Cache hits finish synchronously and never reach the worker's Redis
+        # event stream, so notify any webhook here (after the response is sent).
+        if webhook_url:
+            await db.refresh(job)
+            background_tasks.add_task(webhooks.deliver, job)
         return JobCreateResponse(
             job_id=job_id, status=JobStatus.finished,
             status_url=f"/v1/jobs/{job_id}", events_url=f"/v1/jobs/{job_id}/events",

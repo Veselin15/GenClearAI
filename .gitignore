@@ -12,3 +12,10 @@ data/
 VeoWatermarkRemover-0.6.4-demo/
 frontend/node_modules/
 frontend/.next/
+frontend/*.tsbuildinfo
+
+# local agent/session config
+.claude/
+
+# legacy static prototype (superseded by frontend/, excluded from builds)
+static/

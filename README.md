@@ -45,6 +45,11 @@ cp .env.example .env          # edit SECRET_KEY, POSTGRES_PASSWORD, S3_SECRET_KE
 docker compose up -d --build  # first build downloads + SHA256-verifies the binary
 ```
 
+For the live box, set `ENVIRONMENT=production` in `.env`. In production the API
+**refuses to start** with the default `SECRET_KEY` and disables the interactive
+`/docs` (override with `ENABLE_DOCS=true`). All services expose Docker
+healthchecks, and Caddy waits for `api`/`web` to report healthy before serving.
+
 Open `http://localhost/`, click **Get started**, and register — every new account
 gets **3 free videos**.
 

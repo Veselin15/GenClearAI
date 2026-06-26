@@ -8,14 +8,20 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 _log = logging.getLogger(__name__)
 
 
+_DEFAULT_SECRET = "change-me-in-production"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     # --- core ---
     app_name: str = "GenClear Watermark Service"
-    secret_key: str = "change-me-in-production"          # signs download tokens + webhooks
+    environment: Literal["development", "production"] = "development"
+    log_level: str = "INFO"                              # root log level
+    secret_key: str = _DEFAULT_SECRET                    # signs download tokens + webhooks
     api_base_url: str = "http://localhost"               # used to build absolute URLs
     cors_origins: str = "http://localhost:3000"          # comma-separated; empty = disabled
+    enable_docs: bool | None = None                      # None = on in dev, off in prod
 
     # --- database ---
     database_url: str = "postgresql+asyncpg://genclear:genclear@db:5432/genclear"
@@ -84,11 +90,27 @@ class Settings(BaseSettings):
             return []
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
+    @property
+    def is_production(self) -> bool:
+        return self.environment == "production"
+
+    @property
+    def docs_enabled(self) -> bool:
+        # Interactive docs default on in dev, off in prod unless explicitly enabled.
+        if self.enable_docs is not None:
+            return self.enable_docs
+        return not self.is_production
+
 
 @lru_cache
 def get_settings() -> Settings:
     s = Settings()
-    if s.secret_key == "change-me-in-production":
+    if s.secret_key == _DEFAULT_SECRET:
+        if s.is_production:
+            raise RuntimeError(
+                "SECRET_KEY is the insecure default but ENVIRONMENT=production. "
+                "Set a strong random SECRET_KEY (e.g. `openssl rand -hex 32`) before deploying."
+            )
         warnings.warn(
             "SECRET_KEY is the insecure default — set a strong random value "
             "via the SECRET_KEY environment variable before deploying",

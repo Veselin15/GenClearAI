@@ -8,16 +8,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-log = logging.getLogger(__name__)
-
-from . import storage, webhooks
 from .config import get_settings
-from .db import async_engine
-from .db_migrate import run_async_migrations
-from .models import Base
-from .routers import auth, jobs
 
 settings = get_settings()
+
+logging.basicConfig(
+    level=getattr(logging, settings.log_level.upper(), logging.INFO),
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
+log = logging.getLogger(__name__)
+
+from . import storage, webhooks  # noqa: E402
+from .db import async_engine  # noqa: E402
+from .db_migrate import run_async_migrations  # noqa: E402
+from .models import Base  # noqa: E402
+from .routers import auth, jobs  # noqa: E402
 
 
 @contextlib.asynccontextmanager
@@ -34,7 +39,13 @@ async def lifespan(app: FastAPI):
     await async_engine.dispose()
 
 
-app = FastAPI(title=settings.app_name, lifespan=lifespan)
+app = FastAPI(
+    title=settings.app_name,
+    lifespan=lifespan,
+    docs_url="/docs" if settings.docs_enabled else None,
+    redoc_url="/redoc" if settings.docs_enabled else None,
+    openapi_url="/openapi.json" if settings.docs_enabled else None,
+)
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
