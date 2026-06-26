@@ -39,7 +39,7 @@ export function TopNav({ user, variant = "landing" }: NavProps) {
   return (
     <header className="topbar" role="banner">
       <div className="topbar-inner">
-        <Link className="brand" href="/app" aria-label="GenClear dashboard">
+        <Link className="brand" href="/" aria-label="GenClear home">
           <span className="logo" aria-hidden>◈</span> GenClear
         </Link>
         <AppNavLinks />

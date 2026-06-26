@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" fill="none">
+  <defs>
+    <linearGradient id="sky" x1="640" y1="0" x2="640" y2="520" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0b1020"/>
+      <stop offset="0.35" stop-color="#1a2744"/>
+      <stop offset="0.62" stop-color="#5c3d6e"/>
+      <stop offset="0.82" stop-color="#d97757"/>
+      <stop offset="1" stop-color="#fbbf77"/>
+    </linearGradient>
+    <linearGradient id="haze" x1="0" y1="360" x2="1280" y2="360" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f59f6d" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#f59f6d" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#f59f6d" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="water" x1="640" y1="430" x2="640" y2="720" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1e3a5f"/>
+      <stop offset="0.45" stop-color="#17324f"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="ridge" x1="640" y1="250" x2="640" y2="500" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0f172a"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+      <stop offset="55%" stop-color="#000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0.42"/>
+    </radialGradient>
+    <filter id="soft" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="1.2"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="720" fill="url(#sky)"/>
+  <ellipse cx="980" cy="170" rx="72" ry="72" fill="#fde68a" opacity="0.92"/>
+  <ellipse cx="980" cy="170" rx="110" ry="110" fill="#fbbf24" opacity="0.18"/>
+  <rect y="300" width="1280" height="220" fill="url(#haze)"/>
+  <path d="M0 430 L180 360 L320 395 L470 330 L620 370 L780 300 L940 340 L1120 290 L1280 350 L1280 520 L0 520Z" fill="url(#ridge)" opacity="0.95"/>
+  <path d="M0 470 L220 410 L410 445 L590 385 L760 420 L980 360 L1180 400 L1280 430 L1280 520 L0 520Z" fill="#0b1220" opacity="0.88"/>
+  <rect y="430" width="1280" height="290" fill="url(#water)"/>
+  <path d="M0 470 Q320 500 640 485 T1280 470 L1280 720 L0 720Z" fill="#132238" opacity="0.55"/>
+  <ellipse cx="980" cy="520" rx="46" ry="10" fill="#fbbf24" opacity="0.28" filter="url(#soft)"/>
+  <g opacity="0.35">
+    <path d="M120 520 C180 500 240 540 300 520 C360 500 420 535 480 518 C540 501 600 530 660 515 C720 500 780 528 840 512 C900 496 960 522 1020 508 C1080 494 1140 518 1200 505" stroke="#7dd3fc" stroke-width="2" fill="none"/>
+    <path d="M80 560 C150 545 220 570 290 555 C360 540 430 565 500 550 C570 535 640 560 710 548 C780 536 850 558 920 545 C990 532 1060 552 1130 540" stroke="#38bdf8" stroke-width="1.5" fill="none" opacity="0.7"/>
+  </g>
+  <g opacity="0.22">
+    <circle cx="210" cy="180" r="1.4" fill="#fff"/>
+    <circle cx="340" cy="120" r="1" fill="#fff"/>
+    <circle cx="520" cy="90" r="1.2" fill="#fff"/>
+    <circle cx="700" cy="140" r="0.9" fill="#fff"/>
+    <circle cx="860" cy="70" r="1.1" fill="#fff"/>
+    <circle cx="1040" cy="110" r="1.3" fill="#fff"/>
+    <circle cx="1180" cy="85" r="1" fill="#fff"/>
+  </g>
+  <rect width="1280" height="720" fill="url(#vignette)"/>
+</svg>

@@ -1,42 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { CompareSlider } from "./CompareSlider";
 
-/** Interactive mock of before/after watermark removal on the landing page. */
+function DemoScene({ watermark = false }: { watermark?: boolean }) {
+  return (
+    <div className="demo-scene">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className="demo-scene-art" src="/demo/scene.svg" alt="" draggable={false} />
+      <div className="demo-scene-vignette" />
+      <div className="demo-scene-grain" />
+      <div className="demo-scene-scanlines" />
+      {watermark && (
+        <div className="demo-watermark-stack" aria-hidden>
+          <div className="demo-watermark-gem">◆</div>
+          <span className="demo-watermark-veo">Veo</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Interactive before/after watermark removal demo on the landing page. */
 export function HeroDemo() {
-  const [pos, setPos] = useState(52);
-
   return (
     <div className="hero-demo card lp-hero-demo">
       <div className="hero-demo-labels">
         <span className="lp-demo-badge lp-demo-before">WATERMARKED</span>
         <span className="lp-demo-badge lp-demo-after">CLEAN</span>
       </div>
-      <div className="hero-demo-frame" style={{ "--pos": `${pos}%` } as React.CSSProperties}>
-        <div className="mock-scene mock-before">
-          <div className="mock-sky" />
-          <div className="mock-ground" />
-          <div className="mock-film-grain" />
-          <div className="mock-watermark diamond">◆</div>
-          <span className="mock-veo">Veo</span>
-        </div>
-        <div className="mock-scene mock-after">
-          <div className="mock-sky" />
-          <div className="mock-ground" />
-          <div className="mock-film-grain" />
-        </div>
-        <div className="hero-demo-divider" />
-        <div className="hero-demo-handle">⇄</div>
-        <input
-          type="range"
-          min={8}
-          max={92}
-          value={pos}
-          aria-label="Compare watermark removal"
-          onChange={(e) => setPos(Number(e.target.value))}
-        />
-      </div>
-      <p className="muted hero-demo-caption">Drag the slider — real clips, same pixel-perfect engine.</p>
+
+      <CompareSlider
+        className="hero-demo-slider"
+        aspectRatio="16 / 10"
+        defaultPosition={46}
+        labels={{ before: "BEFORE", after: "AFTER" }}
+        before={<DemoScene watermark />}
+        after={<DemoScene />}
+        caption={
+          <p className="muted hero-demo-caption">
+            Drag the slider — real clips, same pixel-perfect engine.
+          </p>
+        }
+      />
     </div>
   );
 }

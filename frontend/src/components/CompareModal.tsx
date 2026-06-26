@@ -1,31 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { Job } from "@/lib/types";
+import { CompareSlider } from "./CompareSlider";
 
 export function CompareModal({ job, onClose }: { job: Job; onClose: () => void }) {
-  const [pos, setPos] = useState(50);
   const [loaded, setLoaded] = useState(0);
-  const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
-      if (e.key === "ArrowLeft") setPos((p) => Math.max(0, p - 2));
-      if (e.key === "ArrowRight") setPos((p) => Math.min(100, p + 2));
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
-
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!dragging || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    setPos(Math.round(x * 100));
-  }, [dragging]);
 
   const ready = loaded >= 2;
   const w = job.output_width || job.width || 16;
@@ -37,7 +26,13 @@ export function CompareModal({ job, onClose }: { job: Job; onClose: () => void }
       : null;
 
   return (
-    <div className="modal-bg" onClick={(e) => e.target === e.currentTarget && onClose()} role="dialog" aria-modal="true" aria-label="Before and after comparison">
+    <div
+      className="modal-bg"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Before and after comparison"
+    >
       <div className="modal wide card modal-compare">
         <div className="modal-head">
           <div>
@@ -49,7 +44,9 @@ export function CompareModal({ job, onClose }: { job: Job; onClose: () => void }
               </p>
             )}
           </div>
-          <button type="button" className="btn btn-ghost btn-sm modal-close" onClick={onClose} aria-label="Close">✕</button>
+          <button type="button" className="btn btn-ghost btn-sm modal-close" onClick={onClose} aria-label="Close">
+            ✕
+          </button>
         </div>
         <p className="muted" style={{ fontSize: ".86rem", marginBottom: 14 }}>
           Drag the slider to compare the same frame before and after cleaning.
@@ -57,56 +54,47 @@ export function CompareModal({ job, onClose }: { job: Job; onClose: () => void }
         {error && (
           <p style={{ color: "var(--danger)", fontSize: ".88rem", marginBottom: 12 }}>{error}</p>
         )}
-        <div
-          ref={containerRef}
-          className="compare"
-          style={{ "--pos": `${pos}%`, "--aspect": `${w} / ${h}`, cursor: dragging ? "ew-resize" : undefined } as React.CSSProperties}
-          onPointerDown={() => setDragging(true)}
-          onPointerMove={handlePointerMove}
-          onPointerUp={() => setDragging(false)}
-          onPointerLeave={() => setDragging(false)}
-        >
-          {!ready && !error && (
-            <div className="compare-loading">
-              <div className="spinner" />
-              <span className="muted">Loading preview…</span>
-            </div>
-          )}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            className="img-before"
-            src={`/v1/jobs/${job.id}/thumb/before`}
-            alt="Original frame with watermark"
-            onLoad={() => setLoaded((n) => n + 1)}
-            onError={() => { setError("Could not load before preview"); setLoaded((n) => n + 1); }}
-            style={{ opacity: ready ? 1 : 0 }}
-          />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            className="img-after"
-            src={`/v1/jobs/${job.id}/thumb/after`}
-            alt="Cleaned frame without watermark"
-            onLoad={() => setLoaded((n) => n + 1)}
-            onError={() => { setError("Could not load after preview"); setLoaded((n) => n + 1); }}
-            style={{ opacity: ready ? 1 : 0 }}
-          />
-          <div className="divider" />
-          <div className="handle">⇄</div>
-          <span className="cmp-label l">BEFORE</span>
-          <span className="cmp-label r">AFTER</span>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={pos}
-            disabled={!ready}
-            aria-label="Comparison slider position"
-            onChange={(e) => setPos(Number(e.target.value))}
-          />
-        </div>
+
+        <CompareSlider
+          aspectRatio={`${w} / ${h}`}
+          loading={!ready && !error}
+          disabled={!ready}
+          labels={{ before: "BEFORE", after: "AFTER" }}
+          before={
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              className="compare-media"
+              src={`/v1/jobs/${job.id}/thumb/before`}
+              alt="Original frame with watermark"
+              onLoad={() => setLoaded((n) => n + 1)}
+              onError={() => {
+                setError("Could not load before preview");
+                setLoaded((n) => n + 1);
+              }}
+              style={{ opacity: ready ? 1 : 0 }}
+            />
+          }
+          after={
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              className="compare-media"
+              src={`/v1/jobs/${job.id}/thumb/after`}
+              alt="Cleaned frame without watermark"
+              onLoad={() => setLoaded((n) => n + 1)}
+              onError={() => {
+                setError("Could not load after preview");
+                setLoaded((n) => n + 1);
+              }}
+              style={{ opacity: ready ? 1 : 0 }}
+            />
+          }
+        />
+
         <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
           {job.download_url && (
-            <a className="btn btn-primary" href={job.download_url} style={{ flex: 1 }}>Download clean video</a>
+            <a className="btn btn-primary" href={job.download_url} style={{ flex: 1 }}>
+              Download clean video
+            </a>
           )}
           <button className="btn btn-ghost" style={{ flex: job.download_url ? 0 : 1 }} onClick={onClose} type="button">
             Close
