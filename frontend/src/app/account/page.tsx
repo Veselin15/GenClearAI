@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { User } from "@/lib/types";
-import { api, fmtDate, getUserSummary } from "@/lib/api";
+import { api, fmtDate, getUserSummary, openBillingPortal, startCheckout } from "@/lib/api";
 import { TopNav } from "@/components/TopNav";
 import { PageHeader } from "@/components/PageHeader";
 import { PageLoader } from "@/components/PageLoader";
@@ -17,6 +17,8 @@ export default function AccountPage() {
   const [user, setUser] = useState<User | null>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [upgradeYearly, setUpgradeYearly] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [summary, setSummary] = useState<UserSummary | null>(null);
@@ -67,6 +69,26 @@ export default function AccountPage() {
       toast("API key generated — copy it now, it won't be shown again", "ok");
     } catch (err) {
       toast(err instanceof Error ? err.message : "Failed", "error");
+    }
+  }
+
+  async function handleUpgrade() {
+    setCheckoutLoading(true);
+    try {
+      const { url } = await startCheckout(upgradeYearly);
+      window.location.href = url;
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Checkout unavailable", "error");
+      setCheckoutLoading(false);
+    }
+  }
+
+  async function handlePortal() {
+    try {
+      const { url } = await openBillingPortal();
+      window.location.href = url;
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Billing portal unavailable", "error");
     }
   }
 
@@ -169,13 +191,18 @@ export default function AccountPage() {
             <div className="card">
               <CardTitle title="Subscription" icon="◈" />
               <div className="kv"><span className="k">Plan</span><span>{user.plan === "pro" ? "Pro" : "Free"}</span></div>
-              <div className="kv"><span className="k">Credits</span><span>{user.plan === "pro" ? "Unlimited" : user.credits}</span></div>
+              <div className="kv"><span className="k">Credits</span><span>{user.plan === "pro" ? "Unlimited" : `${user.credits} this month`}</span></div>
               <div className="kv"><span className="k">Streak</span><span>{user.streak_days} day{user.streak_days === 1 ? "" : "s"}</span></div>
               <div className="kv"><span className="k">Videos cleaned</span><span>{user.videos_processed}</span></div>
               <div className="kv"><span className="k">Member since</span><span>{fmtDate(user.created_at)}</span></div>
               {user.plan !== "pro" && (
                 <button className="btn btn-primary btn-block" style={{ marginTop: 18 }} onClick={() => setShowUpgrade(true)} type="button">
-                  Upgrade to Pro
+                  Upgrade to Pro — $9/mo
+                </button>
+              )}
+              {user.plan === "pro" && (
+                <button className="btn btn-ghost btn-block" style={{ marginTop: 18 }} onClick={handlePortal} type="button">
+                  Manage subscription
                 </button>
               )}
               {user.badges.length > 0 && (
@@ -200,14 +227,20 @@ export default function AccountPage() {
       </main>
 
       {showUpgrade && (
-        <div className="modal-bg" onClick={() => setShowUpgrade(false)}>
+        <div className="modal-bg" onClick={() => !checkoutLoading && setShowUpgrade(false)}>
           <div className="modal card" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Upgrade to Pro">
             <CardTitle title="Upgrade to Pro" icon="🚀" />
             <p className="muted">
-              Unlimited videos, priority queue, webhooks and API access for $9/month.
-              Payment processing is coming soon to this instance.
+              Unlimited videos, priority queue, API access, and instant file purge for client privacy.
             </p>
-            <button className="btn btn-ghost btn-block" onClick={() => setShowUpgrade(false)} type="button">Close</button>
+            <div className="pricing-toggle" style={{ marginBottom: 16 }}>
+              <button type="button" className={!upgradeYearly ? "active" : ""} onClick={() => setUpgradeYearly(false)}>Monthly $9</button>
+              <button type="button" className={upgradeYearly ? "active" : ""} onClick={() => setUpgradeYearly(true)}>Yearly $7/mo</button>
+            </div>
+            <button className="btn btn-primary btn-block" onClick={handleUpgrade} disabled={checkoutLoading} type="button">
+              {checkoutLoading ? "Redirecting to checkout…" : "Continue to Stripe"}
+            </button>
+            <button className="btn btn-ghost btn-block" style={{ marginTop: 8 }} onClick={() => setShowUpgrade(false)} disabled={checkoutLoading} type="button">Cancel</button>
           </div>
         </div>
       )}

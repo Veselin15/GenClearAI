@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 
 from .config import get_settings
 
@@ -22,7 +23,7 @@ from . import storage, webhooks  # noqa: E402
 from .db import async_engine  # noqa: E402
 from .db_migrate import run_async_migrations  # noqa: E402
 from .models import Base  # noqa: E402
-from .routers import auth, jobs  # noqa: E402
+from .routers import auth, billing, guest, jobs  # noqa: E402
 
 
 @contextlib.asynccontextmanager
@@ -63,6 +64,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(SessionMiddleware, secret_key=settings.secret_key)
 
 if settings.cors_origin_list:
     app.add_middleware(
@@ -74,6 +76,8 @@ if settings.cors_origin_list:
     )
 
 app.include_router(auth.router)
+app.include_router(billing.router)
+app.include_router(guest.router)
 app.include_router(jobs.router)
 
 

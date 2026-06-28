@@ -1,3 +1,4 @@
+import { BRAND_ICON } from "@/components/BrandLogo";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 
 interface Faq {
@@ -17,7 +18,7 @@ export function StructuredData({ faq }: { faq: Faq[] }) {
       "@id": `${SITE_URL}/#organization`,
       name: SITE_NAME,
       url: SITE_URL,
-      logo: `${SITE_URL}/favicon.svg`,
+      logo: `${SITE_URL}${BRAND_ICON}`,
       description: SITE_DESCRIPTION,
     },
     {
@@ -31,13 +32,14 @@ export function StructuredData({ faq }: { faq: Faq[] }) {
     {
       "@type": "SoftwareApplication",
       "@id": `${SITE_URL}/#app`,
-      name: `${SITE_NAME} — Veo & Gemini Watermark Remover`,
+      name: `${SITE_NAME} — Gemini Video Watermark Remove Tool`,
       applicationCategory: "MultimediaApplication",
       operatingSystem: "Web",
       url: SITE_URL,
       description: SITE_DESCRIPTION,
       featureList: [
-        "Automatic Veo & Gemini watermark detection",
+        "Gemini video watermark remove — automatic diamond mark detection",
+        "Veo wordmark removal",
         "Pixel-exact reverse alpha blending (no generative fill)",
         "Before/after compare slider",
         "Live progress with ETA",

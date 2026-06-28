@@ -96,9 +96,10 @@ async def _enrich_job(db: AsyncSession, job: Job, out: JobOut) -> JobOut:
     return out
 
 
-def _with_links(out: JobOut, job: Job) -> JobOut:
+def _with_links(out: JobOut, job: Job, *, guest: bool = False) -> JobOut:
     if job.status == JobStatus.finished:
-        out.download_url = f"/v1/jobs/{job.id}/download?token={make_download_token(job.id)}"
+        prefix = "/v1/guest" if guest else "/v1"
+        out.download_url = f"{prefix}/jobs/{job.id}/download?token={make_download_token(job.id)}"
     out.has_preview = bool(job.thumb_after)
     if job.width and job.height and job.output_width and job.output_height:
         out.quality_matched = (

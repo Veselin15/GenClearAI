@@ -14,7 +14,8 @@ export function ComparisonSection() {
       <div className="container">
         <h2 className="center">How GenClear compares</h2>
         <p className="section-sub">
-          Other tools blur, crop, or repaint. We reverse the watermark blend — mathematically exact.
+          Other Gemini video watermark remove tools blur, crop, or repaint.
+          GenClear reverses the blend — mathematically exact, every frame.
         </p>
         <div className="lp-compare-simple card">
           <div className="lp-compare-simple-head">

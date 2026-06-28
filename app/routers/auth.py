@@ -1,6 +1,7 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +13,7 @@ from ..auth import (
     verify_password,
 )
 from ..config import get_settings
+from ..credits import maybe_reset_monthly_credits
 from ..db import get_db
 from ..engagement import build_engagement
 from ..models import Job, JobStatus, Plan, User
@@ -39,12 +41,17 @@ router = APIRouter(prefix="/api")
 async def _me(user: User, db: AsyncSession) -> MeOut:
     out = MeOut.model_validate(user)
     out.has_api_key = user.api_key_hash is not None
+    out.auth_provider = "google" if user.google_sub else ("password" if user.password_hash else None)
     eng = await build_engagement(db, user)
     out.badges = [BadgeOut(**b) for b in eng["badges"]]
     out.onboarding = OnboardingOut(**eng["onboarding"])
     out.referral_count = eng["referral_count"]
     out.level = LevelOut(**eng["level"])
     return out
+
+
+def _apply_monthly_credits(user: User) -> bool:
+    return maybe_reset_monthly_credits(user)
 
 
 async def _unique_referral_code(db: AsyncSession) -> str:
@@ -56,23 +63,80 @@ async def _unique_referral_code(db: AsyncSession) -> str:
 
 
 def _maybe_daily_bonus(user: User) -> int:
-    if user.plan != Plan.free.value or user.credits >= settings.daily_bonus_cap:
-        return 0
-    now = datetime.now(timezone.utc)
-    last = user.last_credit_grant
-    if last is not None and (now - last) < timedelta(hours=20):
-        return 0
-    if last is not None:
-        gap = (now.date() - last.date()).days
-        if gap == 1:
-            user.streak_days += 1
-        elif gap >= 2:
-            user.streak_days = 1
-    else:
-        user.streak_days = 1
-    user.credits += settings.daily_bonus_credits
-    user.last_credit_grant = now
-    return settings.daily_bonus_credits
+    """Deprecated — monthly credits replaced daily drip. Kept for API compat."""
+    return 0
+
+
+@router.get("/auth/google")
+async def google_login(request: Request):
+    if not settings.google_client_id:
+        raise HTTPException(503, "Google sign-in is not configured")
+    from authlib.integrations.starlette_client import OAuth
+
+    oauth = OAuth()
+    oauth.register(
+        name="google",
+        client_id=settings.google_client_id,
+        client_secret=settings.google_client_secret,
+        server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+        client_kwargs={"scope": "openid email profile"},
+    )
+    redirect_uri = f"{settings.api_base_url}/api/auth/google/callback"
+    return await oauth.google.authorize_redirect(request, redirect_uri)
+
+
+@router.get("/auth/google/callback")
+async def google_callback(request: Request, response: Response, db: AsyncSession = Depends(get_db)):
+    if not settings.google_client_id:
+        raise HTTPException(503, "Google sign-in is not configured")
+    from authlib.integrations.starlette_client import OAuth
+
+    oauth = OAuth()
+    oauth.register(
+        name="google",
+        client_id=settings.google_client_id,
+        client_secret=settings.google_client_secret,
+        server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+        client_kwargs={"scope": "openid email profile"},
+    )
+    token = await oauth.google.authorize_access_token(request)
+    info = token.get("userinfo") or await oauth.google.parse_id_token(request, token)
+    if not info or not info.get("email"):
+        raise HTTPException(400, "could not retrieve Google profile")
+
+    email = info["email"].lower()
+    google_sub = info["sub"]
+    user = await db.scalar(select(User).where(User.google_sub == google_sub))
+    if user is None:
+        user = await db.scalar(select(User).where(User.email == email))
+        if user:
+            user.google_sub = google_sub
+            if not user.full_name and info.get("name"):
+                user.full_name = info["name"]
+        else:
+            user = User(
+                email=email,
+                full_name=info.get("name"),
+                google_sub=google_sub,
+                plan=Plan.free.value,
+                credits=settings.free_credits,
+                referral_code=await _unique_referral_code(db),
+                credits_reset_at=datetime.now(timezone.utc).replace(
+                    day=1, hour=0, minute=0, second=0, microsecond=0
+                ),
+            )
+            db.add(user)
+
+    if not user.is_active:
+        raise HTTPException(403, "account disabled")
+
+    _apply_monthly_credits(user)
+    await db.commit()
+    await db.refresh(user)
+
+    redirect = RedirectResponse(url=f"{settings.frontend_url}/app", status_code=302)
+    issue_session(redirect, user.id)
+    return redirect
 
 
 @router.post("/auth/register", response_model=MeOut, status_code=201)
@@ -94,8 +158,9 @@ async def register(
         plan=Plan.free.value,
         credits=settings.free_credits,
         referral_code=await _unique_referral_code(db),
-        last_credit_grant=datetime.now(timezone.utc),
-        streak_days=1,
+        credits_reset_at=datetime.now(timezone.utc).replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        ),
     )
 
     if payload.referral_code:
@@ -127,13 +192,13 @@ async def login(
         raise HTTPException(401, "invalid email or password")
     if not user.is_active:
         raise HTTPException(403, "account disabled")
-    granted = _maybe_daily_bonus(user)
-    if granted:
+    reset = _apply_monthly_credits(user)
+    if reset:
         await db.commit()
         await db.refresh(user)
     issue_session(response, user.id)
     out = await _me(user, db)
-    out.daily_bonus = granted
+    out.daily_bonus = 0
     return out
 
 
@@ -144,13 +209,11 @@ async def logout(response: Response):
 
 @router.get("/me", response_model=MeOut)
 async def me(user: User = Depends(current_user), db: AsyncSession = Depends(get_db)):
-    granted = _maybe_daily_bonus(user)
-    if granted:
+    reset = _apply_monthly_credits(user)
+    if reset:
         await db.commit()
         await db.refresh(user)
-    out = await _me(user, db)
-    out.daily_bonus = granted
-    return out
+    return await _me(user, db)
 
 
 @router.patch("/me", response_model=MeOut)

@@ -7,7 +7,7 @@ export function AnnouncementBar() {
     <div className="lp-announce">
       <div className="container lp-announce-inner">
         <span className="lp-announce-badge">New</span>
-        <span>3 free videos on signup — paste or drop your clip right on this page</span>
+        <span>Remove Gemini video watermarks free — paste or drop your clip below</span>
         <Link href="/register" className="lp-announce-link">Start free →</Link>
       </div>
     </div>

@@ -96,7 +96,15 @@ export function getJobs(limit = 50) {
 
 export function creditLabel(user: import("./types").User) {
   if (user.plan === "pro") return "Pro · unlimited";
-  return `${user.credits} credit${user.credits === 1 ? "" : "s"} left`;
+  return `${user.credits} credit${user.credits === 1 ? "" : "s"} this month`;
+}
+
+export function startCheckout(yearly = false) {
+  return api<{ url: string }>(`/api/billing/checkout?yearly=${yearly}`, { method: "POST" });
+}
+
+export function openBillingPortal() {
+  return api<{ url: string }>("/api/billing/portal", { method: "POST" });
 }
 
 export function fmtDate(iso: string | null) {
@@ -152,6 +160,6 @@ export function notifyDone(title: string, body: string) {
   if (typeof window === "undefined" || !("Notification" in window)) return;
   if (Notification.permission !== "granted") return;
   try {
-    new Notification(title, { body, icon: "/favicon.svg" });
+    new Notification(title, { body, icon: "/brand/logo.png" });
   } catch { /* ignore */ }
 }

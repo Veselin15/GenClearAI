@@ -17,7 +17,9 @@ from .security import hash_api_key
 
 settings = get_settings()
 COOKIE_NAME = "genclear_session"
+GUEST_COOKIE_NAME = "genclear_guest"
 _session = URLSafeTimedSerializer(settings.secret_key, salt="session")
+_guest = URLSafeTimedSerializer(settings.secret_key, salt="guest")
 
 
 # --- passwords ------------------------------------------------------------
@@ -49,6 +51,28 @@ def issue_session(response: Response, user_id) -> None:
 
 def clear_session(response: Response) -> None:
     response.delete_cookie(COOKIE_NAME, path="/")
+
+
+# --- guest session cookies (anonymous PLG tier) ---------------------------
+def issue_guest_session(response: Response, guest_id: str) -> None:
+    response.set_cookie(
+        GUEST_COOKIE_NAME,
+        _guest.dumps(guest_id),
+        max_age=30 * 24 * 3600,
+        httponly=True,
+        samesite="lax",
+        secure=settings.cookie_secure,
+        path="/",
+    )
+
+
+def guest_id_from_token(token: str | None) -> str | None:
+    if not token:
+        return None
+    try:
+        return _guest.loads(token, max_age=30 * 24 * 3600)
+    except (BadSignature, SignatureExpired):
+        return None
 
 
 def user_id_from_token(token: str | None) -> str | None:
@@ -85,4 +109,15 @@ async def current_user(
     user = await _lookup(db, genclear_session, authorization)
     if user is None or not user.is_active:
         raise HTTPException(401, "not authenticated")
+    return user
+
+
+async def optional_user(
+    genclear_session: str | None = Cookie(default=None),
+    authorization: str | None = Header(default=None),
+    db: AsyncSession = Depends(get_db),
+) -> User | None:
+    user = await _lookup(db, genclear_session, authorization)
+    if user is None or not user.is_active:
+        return None
     return user

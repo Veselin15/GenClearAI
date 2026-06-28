@@ -59,6 +59,8 @@ class MeOut(BaseModel):
     has_api_key: bool = False
     daily_bonus: int = 0
     streak_days: int = 0
+    credits_reset_at: datetime | None = None
+    auth_provider: str | None = None
     badges: list[BadgeOut] = []
     onboarding: OnboardingOut | None = None
     referral_count: int = 0
@@ -124,3 +126,11 @@ class JobOut(BaseModel):
     eta_sec: int | None = None
     has_preview: bool = False
     quality_matched: bool | None = None
+
+
+class GuestJobOut(JobOut):
+    requires_registration: bool = False
+
+
+class CheckoutOut(BaseModel):
+    url: str

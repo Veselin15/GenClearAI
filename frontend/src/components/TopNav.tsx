@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { User } from "@/lib/types";
 import { creditLabel } from "@/lib/api";
+import { BrandLink } from "@/components/BrandLogo";
 import { MobileNav } from "./MobileNav";
 
 interface NavProps {
@@ -16,9 +17,7 @@ export function TopNav({ user, variant = "landing" }: NavProps) {
     return (
       <header className="topbar lp-topbar" role="banner">
         <div className="topbar-inner lp-topbar-inner">
-          <Link className="brand" href="/" aria-label="GenClear home">
-            <span className="logo" aria-hidden>◈</span> GenClear
-          </Link>
+          <BrandLink priority />
           <nav className="nav-links nav-desktop" aria-label="Main navigation">
             <Link href="/#compare">Why us</Link>
             <Link href="/#pricing">Pricing</Link>
@@ -39,9 +38,7 @@ export function TopNav({ user, variant = "landing" }: NavProps) {
   return (
     <header className="topbar" role="banner">
       <div className="topbar-inner">
-        <Link className="brand" href="/" aria-label="GenClear home">
-          <span className="logo" aria-hidden>◈</span> GenClear
-        </Link>
+        <BrandLink />
         <AppNavLinks />
         <div className="nav-right">
           {user && (

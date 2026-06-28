@@ -63,10 +63,18 @@ class User(Base):
     # Either may be null depending on how the account was created.
     password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     api_key_hash: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    google_sub: Mapped[str | None] = mapped_column(String(128), unique=True, nullable=True)
 
     plan: Mapped[str] = mapped_column(String(16), default=Plan.free.value, nullable=False)
     credits: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    credits_reset_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    # Stripe subscription
+    stripe_customer_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    stripe_subscription_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     # engagement / growth
     referral_code: Mapped[str | None] = mapped_column(
@@ -97,8 +105,11 @@ class Job(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=True
+    )
+    guest_session_id: Mapped[str | None] = mapped_column(
+        String(64), index=True, nullable=True
     )
     status: Mapped[JobStatus] = mapped_column(
         JobStatusType, default=JobStatus.pending, index=True

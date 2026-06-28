@@ -1,0 +1,39 @@
+# Production TLS via Caddy (Let's Encrypt). Use when ports 80/443 are forwarded
+# from your router to this host. For Cloudflare Tunnel, keep the default :80
+# Caddyfile instead — Cloudflare terminates HTTPS at the edge.
+#
+# DNS: point genclear.net (+ www) A record to your public IP. Grey-cloud (DNS
+# only) is simplest for ACME; orange-cloud works with Cloudflare origin certs.
+
+genclear.net, www.genclear.net {
+	request_body {
+		max_size 1GB
+	}
+
+	encode gzip zstd
+
+	@www host www.genclear.net
+	redir @www https://genclear.net{uri} permanent
+
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+	handle /v1/* {
+		reverse_proxy api:8000
+	}
+	handle /healthz {
+		reverse_proxy api:8000
+	}
+	handle /docs* {
+		reverse_proxy api:8000
+	}
+	handle /openapi.json {
+		reverse_proxy api:8000
+	}
+	handle /redoc {
+		reverse_proxy api:8000
+	}
+	handle {
+		reverse_proxy web:3000
+	}
+}

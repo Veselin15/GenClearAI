@@ -4,19 +4,19 @@ import Link from "next/link";
 import { useState } from "react";
 
 const FREE_FEATURES = [
-  "3 videos on signup + daily bonus credits",
+  "1 free anonymous clean — no signup",
+  "3 monthly credits after registration",
   "Full 1080p output — same engine as Pro",
   "Live ETA & before/after compare",
-  "High-res preview + full MP4 download",
-  "Refer friends → +2 credits each",
+  "Google sign-in · personal workspace",
 ];
 
 const PRO_FEATURES = [
   "<strong>Unlimited</strong> videos",
-  "Same pixel-perfect quality as Free",
   "Priority queue — skip the line",
-  "Webhooks & REST API",
-  "Creator levels & streak bonuses",
+  "Webhooks & REST API for pipelines",
+  "0-hour data retention — instant purge",
+  "Batch rendering for agency workflows",
 ];
 
 export function PricingToggle() {
@@ -40,7 +40,7 @@ export function PricingToggle() {
         <div className="card plan">
           <h3>Free</h3>
           <p className="lp-plan-desc muted">Try GenClear with full-quality output.</p>
-          <div className="price">$0<span> / forever</span></div>
+          <div className="price">$0<span> / month</span></div>
           <ul>
             {FREE_FEATURES.map((f) => (
               <li key={f} dangerouslySetInnerHTML={{ __html: f }} />
@@ -51,7 +51,7 @@ export function PricingToggle() {
         <div className="card plan featured">
           <span className="pill pill-pro tag">Most popular</span>
           <h3>Pro</h3>
-          <p className="lp-plan-desc muted">For creators and teams shipping AI video every week.</p>
+          <p className="lp-plan-desc muted">For agencies and teams shipping AI video to clients every week.</p>
           <div className="price">${proPrice}<span>{proLabel}</span></div>
           {yearlyTotal && <p className="lp-yearly-total muted">${yearlyTotal}/year · cancel anytime</p>}
           <ul>
@@ -59,7 +59,7 @@ export function PricingToggle() {
               <li key={f} dangerouslySetInnerHTML={{ __html: f }} />
             ))}
           </ul>
-          <Link className="btn btn-primary btn-block" href="/register">Get Pro — start free first</Link>
+          <Link className="btn btn-primary btn-block" href="/register">Get Pro</Link>
           <p className="lp-plan-guarantee muted">No quality tier — only queue priority &amp; limits change.</p>
         </div>
       </div>

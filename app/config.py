@@ -67,13 +67,29 @@ class Settings(BaseSettings):
     # --- accounts / sessions / trial ---
     session_max_age: int = 30 * 24 * 3600        # 30 days
     cookie_secure: bool = False                  # set True behind HTTPS in production
-    free_credits: int = 3                        # videos a new free account can process
+    free_credits: int = 3                        # monthly allowance for registered free tier
+    monthly_free_credits: int = 3                # reset to this on the 1st of each month
+
+    # --- anonymous guest tier (PLG funnel) ---
+    guest_jobs_limit: int = 1                    # free cleans per guest session
+    guest_rate_limit: int = 3                    # max guest uploads per hour per IP
+    guest_result_ttl_hours: int = 24             # shorter TTL for anonymous results
 
     # --- engagement / growth ---
-    daily_bonus_credits: int = 1                 # free credits granted once per day
-    daily_bonus_cap: int = 5                     # don't top up past this
     referral_bonus: int = 2                      # credits to BOTH parties on a referral
     pro_queue_priority: int = 9                # Celery priority 0-9 (higher = sooner)
+    pro_result_ttl_hours: int = 1                # near-instant purge for paid tiers
+
+    # --- Google OAuth ---
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    frontend_url: str = "http://localhost:3000"  # OAuth redirect + Stripe return URLs
+
+    # --- Stripe billing ---
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_price_monthly: str = ""               # price_xxx for Pro monthly
+    stripe_price_yearly: str = ""                # price_xxx for Pro yearly
 
     # --- rate limiting ---
     login_rate_limit: int = 10                  # max login attempts per minute per IP

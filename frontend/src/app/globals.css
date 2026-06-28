@@ -74,15 +74,25 @@ p { margin: 0 0 1em; }
   font-weight: 700; font-size: 1.12rem; display: flex; align-items: center; gap: 9px;
   letter-spacing: -.02em; transition: opacity .15s;
 }
-.brand:hover { opacity: .85; }
-.logo {
-  display: inline-grid; place-items: center; width: 30px; height: 30px;
-  border-radius: 9px; color: #fff; font-size: .95rem;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  box-shadow: 0 4px 16px rgba(20,184,166,.4), 0 0 0 1px rgba(20,184,166,.2);
-  transition: transform .2s var(--ease-spring), box-shadow .2s;
+.brand:hover { opacity: .92; }
+.brand-logo-icon {
+  width: 32px; height: 32px; object-fit: contain; flex-shrink: 0;
+  transition: transform .2s var(--ease-spring);
 }
-.brand:hover .logo { transform: scale(1.08); box-shadow: 0 6px 20px rgba(20,184,166,.5), 0 0 0 1px rgba(20,184,166,.3); }
+.brand-logo-full {
+  height: auto; width: auto; max-height: 56px; max-width: 200px; object-fit: contain;
+}
+.brand-wordmark {
+  font-weight: 700; letter-spacing: -.02em;
+  background: linear-gradient(90deg, #1e3a8a 0%, #0d9488 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.brand:hover .brand-logo-icon { transform: scale(1.06); }
+.brand-auth { justify-content: center; margin-bottom: 22px; }
+.brand-auth .brand-logo-icon { width: 40px; height: 40px; }
+.brand-footer { flex-direction: column; align-items: flex-start; gap: 0; }
+.brand-footer .brand-logo-full { max-height: 72px; max-width: 220px; }
+.auth-side-logo { max-height: 64px; max-width: 200px; margin-bottom: 8px; }
 .nav-links { display: flex; gap: 4px; }
 .nav-links a {
   color: var(--muted); padding: 7px 14px; border-radius: 8px; font-size: .9rem; font-weight: 500;
@@ -157,6 +167,7 @@ p { margin: 0 0 1em; }
 .auth-wrap { min-height: 100vh; display: grid; place-items: center; padding: 40px 20px; }
 .auth-card { width: 100%; max-width: 410px; }
 .auth-card .brand { justify-content: center; margin-bottom: 22px; font-size: 1.3rem; }
+.auth-card .brand-wordmark { font-size: 1.3rem; }
 .auth-card h1 { font-size: 1.5rem; text-align: center; }
 .auth-sub { text-align: center; color: var(--muted); margin-bottom: 26px; font-size: .94rem; }
 .auth-foot { text-align: center; margin-top: 20px; color: var(--muted); font-size: .9rem; }
@@ -1114,9 +1125,9 @@ kbd {
   background: rgba(255, 255, 255, 0.88);
   border-bottom-color: var(--border);
 }
-.lp-shell .logo {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35);
+.lp-shell .brand-wordmark {
+  background: linear-gradient(90deg, #1e40af 0%, #0d9488 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 .lp-shell .btn-primary {
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
@@ -1500,6 +1511,39 @@ a.link-accent { transition: color .15s; }
 
 /* Selection color */
 ::selection { background: rgba(20,184,166,.25); color: var(--text); }
+
+/* Google OAuth + guest PLG funnel */
+.btn-google {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  background: #fff; color: #1f2937; border: 1px solid var(--border);
+  font-weight: 600;
+}
+.btn-google:hover { background: #f9fafb; }
+.auth-divider {
+  display: flex; align-items: center; gap: 12px; margin: 18px 0; color: var(--muted); font-size: .85rem;
+}
+.auth-divider::before, .auth-divider::after {
+  content: ""; flex: 1; height: 1px; background: var(--border);
+}
+.guest-result { padding: 20px; }
+.guest-result-head { margin-bottom: 16px; text-align: center; }
+.guest-result-head h3 { margin: 0 0 8px; }
+.guest-result-actions {
+  display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; justify-content: center;
+}
+.guest-result-foot { text-align: center; font-size: .85rem; margin: 14px 0 0; }
+
+/* SEO guide pages */
+.guide-hero { padding: 48px 0 32px; text-align: center; max-width: 720px; margin: 0 auto; }
+.guide-hero h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.15; }
+.guide-content { max-width: 720px; margin: 0 auto; }
+.guide-content h2 { margin-top: 2rem; font-size: 1.35rem; }
+.guide-content p, .guide-content li { line-height: 1.7; color: var(--muted); }
+.guide-cta {
+  margin: 40px 0; padding: 28px; text-align: center;
+  border-radius: 16px; border: 1px solid rgba(20, 184, 166, 0.35);
+  background: linear-gradient(135deg, rgba(20, 184, 166, 0.08), rgba(2, 132, 199, 0.04));
+}
 
 /* Scrollbar styling (Webkit) */
 ::-webkit-scrollbar { width: 8px; height: 8px; }

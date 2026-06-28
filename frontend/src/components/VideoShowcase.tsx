@@ -10,15 +10,15 @@ export function VideoShowcase() {
       <div className="container lp-showcase-inner">
         <div className="lp-showcase-visual">
           <HeroDemo />
-          <p className="muted lp-showcase-caption">Veo watermark removed across every frame</p>
+          <p className="muted lp-showcase-caption">Gemini video watermark removed across every frame</p>
         </div>
         <div className="lp-showcase-copy">
-          <span className="lp-section-label">Veo &amp; Gemini video</span>
-          <h2>Remove the watermark from video — free to start.</h2>
+          <span className="lp-section-label">Gemini video watermark remove</span>
+          <h2>The best way to remove Gemini watermarks from video.</h2>
           <p className="muted">
-            You wrote the prompt and directed the shot — it&apos;s your content.
-            We strip every Veo and Gemini mark so it posts clean, without a visible
-            &ldquo;Made with AI&rdquo; label throttling your reach.
+            Every Gemini clip ships with that diamond mark baked into every frame.
+            GenClear strips it cleanly — landscape or portrait, 720p or 1080p — so your
+            TikToks, Reels, and client deliverables look finished, not &ldquo;Made with AI.&rdquo;
           </p>
           <div className="lp-platform-pills">
             {PLATFORMS.map((p) => (

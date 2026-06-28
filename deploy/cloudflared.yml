@@ -1,0 +1,24 @@
+# Cloudflare Tunnel — routes public HTTPS to local Caddy on :80.
+#
+# Setup (on the home server, after Docker stack is running):
+#   1. cloudflared tunnel login
+#   2. cloudflared tunnel create genclear
+#   3. Replace TUNNEL_UUID below with the ID from step 2
+#   4. cloudflared tunnel route dns genclear genclear.net
+#   5. cloudflared tunnel route dns genclear www.genclear.net
+#   6. sudo mkdir -p /etc/cloudflared
+#   7. sudo cp deploy/cloudflared.yml /etc/cloudflared/config.yml
+#   8. sudo cloudflared service install
+#   9. sudo systemctl enable --now cloudflared
+#
+# Credentials file is written automatically to ~/.cloudflared/<TUNNEL_UUID>.json
+
+tunnel: TUNNEL_UUID
+credentials-file: /home/YOUR_USER/.cloudflared/TUNNEL_UUID.json
+
+ingress:
+  - hostname: genclear.net
+    service: http://localhost:80
+  - hostname: www.genclear.net
+    service: http://localhost:80
+  - service: http_status:404

@@ -45,6 +45,8 @@ export interface User {
   onboarding: Onboarding | null;
   referral_count: number;
   level: Level | null;
+  credits_reset_at?: string | null;
+  auth_provider?: string | null;
 }
 
 export interface ActivityItem {

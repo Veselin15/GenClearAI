@@ -1,15 +1,16 @@
 import Link from "next/link";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export function SiteFooter() {
   return (
     <footer className="footer site-footer lp-footer">
       <div className="container footer-grid">
         <div className="lp-footer-brand">
-          <div className="brand" style={{ marginBottom: 12 }}>
-            <span className="logo">◈</span> GenClear
+          <div className="brand brand-footer" style={{ marginBottom: 12 }}>
+            <BrandLogo variant="full" />
           </div>
           <p className="muted" style={{ margin: 0, fontSize: ".88rem", maxWidth: 300, lineHeight: 1.6 }}>
-            The fastest way to remove Veo and Gemini watermarks.
+            The fastest Gemini video watermark remove tool.
             Pixel-perfect output for creators, agencies, and filmmakers.
           </p>
         </div>
@@ -19,6 +20,13 @@ export function SiteFooter() {
           <Link href="/#pricing">Pricing</Link>
           <Link href="/#features">Features</Link>
           <Link href="/#faq">FAQ</Link>
+        </div>
+        <div className="footer-links">
+          <strong className="lp-footer-heading">Guides</strong>
+          <Link href="/guides/gemini-video-watermark-remove">Gemini video watermark remove</Link>
+          <Link href="/guides/clean-plates-from-ai-video">Clean plates from AI video</Link>
+          <Link href="/guides/remove-ai-video-artifacts">Remove AI artifacts</Link>
+          <Link href="/guides/automate-content-aware-fill-ai-video">Automate Content-Aware Fill</Link>
         </div>
         <div className="footer-links">
           <strong className="lp-footer-heading">Developers</strong>

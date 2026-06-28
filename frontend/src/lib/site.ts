@@ -3,15 +3,16 @@
 // Override the origin per-environment with NEXT_PUBLIC_SITE_URL (no trailing slash).
 
 export const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://genclear.app"
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://genclear.net"
 ).replace(/\/$/, "");
 
 export const SITE_NAME = "GenClear";
 
-export const SITE_TAGLINE = "Remove Veo & Gemini watermarks — pixel-perfect AI video";
+export const SITE_TAGLINE =
+  "Remove Gemini video watermarks — pixel-perfect, every frame";
 
 export const SITE_DESCRIPTION =
-  "Ship clean AI video in minutes. GenClear removes Veo and Gemini watermarks with exact reverse alpha blending — no generative fill, no quality loss. Free trial, API access, priority queue.";
+  "Gemini video watermark remove free — strip the diamond mark from every frame in minutes. No login, no credit card. Upload, compare, download clean MP4.";
 
 export function abs(path = "/"): string {
   return path.startsWith("http") ? path : `${SITE_URL}${path.startsWith("/") ? "" : "/"}${path}`;

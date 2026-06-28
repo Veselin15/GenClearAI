@@ -36,5 +36,9 @@ celery.conf.update(
             "task": "app.tasks.reap_stuck_jobs",
             "schedule": crontab(minute="*/5"),
         },
+        "reset-monthly-credits": {
+            "task": "app.tasks.reset_monthly_credits",
+            "schedule": crontab(minute=5, hour=0, day_of_month=1),
+        },
     },
 )

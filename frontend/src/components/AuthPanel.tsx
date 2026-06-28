@@ -4,15 +4,18 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { TopNav } from "@/components/TopNav";
+import { BrandLink, BrandLogo } from "@/components/BrandLogo";
 import { api } from "@/lib/api";
 import { useToast } from "@/components/Toast";
 
+import { GoogleAuthButton, AuthDivider } from "@/components/GoogleAuthButton";
+
 const PERKS = [
-  "3 free videos on signup",
-  "+1 credit every day you return",
-  "Paste or drop on the homepage",
+  "1 free anonymous clean on the homepage",
+  "3 monthly credits after sign-up",
+  "Google OAuth — 10-second registration",
   "Before/after compare slider",
-  "API access for automation",
+  "API access on Pro for agency pipelines",
 ];
 
 function AuthForm({ mode }: { mode: "login" | "register" }) {
@@ -50,7 +53,7 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
     <div className="auth-page">
       <div className="auth-split-wrap">
         <div className="auth-side card">
-          <span className="lp-section-label">GenClear</span>
+          <BrandLogo variant="full" className="auth-side-logo" priority />
           <h2>Remove watermarks.<br />Keep creating.</h2>
           <ul className="auth-perks">
             {PERKS.map((p) => (
@@ -62,13 +65,13 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
           )}
         </div>
         <div className="auth-card card">
-          <Link className="brand" href="/" aria-label="GenClear home">
-            <span className="logo" aria-hidden>◈</span> GenClear
-          </Link>
+          <BrandLink className="brand-auth" />
           <h1>{mode === "login" ? "Welcome back" : "Create your account"}</h1>
           <p className="auth-sub">
-            {mode === "login" ? "Sign in to continue cleaning clips." : "Free forever tier — no card needed."}
+            {mode === "login" ? "Sign in to continue cleaning clips." : "3 monthly credits — no card needed."}
           </p>
+          <GoogleAuthButton label={mode === "register" ? "Sign up with Google" : "Sign in with Google"} />
+          <AuthDivider />
           <form onSubmit={onSubmit} noValidate>
             {mode === "register" && (
               <div className="field">

@@ -1,0 +1,18 @@
+# Production overlay — use WITHOUT docker-compose.override.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Set DOMAIN in .env (default genclear.net). Choose TLS mode in deploy/setup.sh:
+#   tunnel  — keep HTTP Caddy on :80, expose via Cloudflare Tunnel (recommended)
+#   direct  — mount deploy/Caddyfile.production for Caddy-managed Let's Encrypt
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        NEXT_PUBLIC_SITE_URL: https://${DOMAIN:-genclear.net}
+
+  caddy:
+    volumes:
+      - ${CADDYFILE_PATH:-./Caddyfile}:/etc/caddy/Caddyfile:ro

@@ -1,8 +1,8 @@
 const CARDS = [
   {
     icon: "◆",
-    title: "Visible logo, lifted",
-    desc: "Gemini diamond and Veo wordmarks detected automatically — removed frame by frame, not painted over.",
+    title: "Gemini diamond, gone",
+    desc: "Purpose-built for Gemini video watermark remove — the diamond mark is detected and lifted from every frame, not painted over.",
   },
   {
     icon: "▶",

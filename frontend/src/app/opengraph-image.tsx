@@ -1,16 +1,17 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { ImageResponse } from "next/og";
-import { SITE_NAME } from "@/lib/site";
 
-// Branded 1200×630 social card, generated at request time. Without this, links
-// shared to social/chat render a blank preview.
-// Note: Satori (the renderer) requires `display: flex` on any element with more
-// than one child, and only ships Latin glyphs — so we avoid symbol characters
-// that would trigger a network font fetch.
-export const alt = "GenClear — remove Veo & Gemini watermarks, pixel-perfect.";
+// Branded 1200×630 social card with the GenClear logo lockup.
+export const alt = "GenClear — Gemini video watermark remove, pixel-perfect.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default function OpengraphImage() {
+export default async function OpengraphImage() {
+  const logoPath = join(process.cwd(), "public", "brand", "logo-text.png");
+  const logoBuffer = await readFile(logoPath);
+  const logoSrc = `data:image/png;base64,${logoBuffer.toString("base64")}`;
+
   return new ImageResponse(
     (
       <div
@@ -22,25 +23,18 @@ export default function OpengraphImage() {
           justifyContent: "space-between",
           padding: "72px",
           background:
-            "radial-gradient(1200px 700px at 85% -10%, rgba(20,184,166,0.35), transparent 55%), linear-gradient(135deg, #0a0e13 0%, #0e1722 100%)",
+            "radial-gradient(1200px 700px at 85% -10%, rgba(59,130,246,0.25), transparent 55%), radial-gradient(900px 600px at 10% 100%, rgba(20,184,166,0.2), transparent 50%), linear-gradient(135deg, #0a0e13 0%, #0e1722 100%)",
           color: "#f0f4f8",
           fontFamily: "sans-serif",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-          <div
-            style={{
-              width: 60,
-              height: 60,
-              borderRadius: 16,
-              display: "flex",
-              background: "linear-gradient(135deg, #14b8a6, #2dd4bf)",
-            }}
-          />
-          <div style={{ display: "flex", fontSize: 40, fontWeight: 700, letterSpacing: "-0.02em" }}>
-            {SITE_NAME}
-          </div>
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={logoSrc}
+          alt="GenClear"
+          height={88}
+          style={{ objectFit: "contain", objectPosition: "left center" }}
+        />
 
         <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
           <div
@@ -51,7 +45,7 @@ export default function OpengraphImage() {
               letterSpacing: "-0.03em",
             }}
           >
-            Remove Veo &amp; Gemini
+            Gemini video watermark
           </div>
           <div
             style={{
@@ -62,7 +56,7 @@ export default function OpengraphImage() {
               color: "#2dd4bf",
             }}
           >
-            watermarks.
+            remove — pixel-perfect.
           </div>
           <div style={{ display: "flex", fontSize: 33, color: "#8b9cb8", maxWidth: 900 }}>
             Pixel-exact reverse alpha blending — not generative fill. No quality loss.

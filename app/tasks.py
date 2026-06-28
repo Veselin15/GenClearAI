@@ -27,6 +27,8 @@ _log = logging.getLogger(__name__)
 
 
 def _refund_credit(session, job: Job) -> None:
+    if not job.user_id:
+        return
     # Atomic increment so a refund can't race the API's credit spend or a
     # concurrent grant. Scoped to free users — pro plans don't consume credits.
     session.execute(
@@ -192,7 +194,7 @@ def _ensure_full_resolution(in_path: Path, out_path: Path) -> dict[str, int] | N
 
 
 def _finish_success(session, job: Job, in_path, out_path, out_dir, code, watermark) -> None:
-    """Upload result, mark finished immediately, then previews + cache."""
+    """Upload result + previews, then mark finished in one commit."""
     out_dims = _ensure_full_resolution(in_path, out_path)
     if out_dims:
         job.output_width = out_dims["width"]
@@ -206,15 +208,14 @@ def _finish_success(session, job: Job, in_path, out_path, out_dir, code, waterma
     job.finished_at = _now()
     if job.started_at:
         job.processing_sec = round((job.finished_at - job.started_at).total_seconds(), 2)
-    job.expires_at = job.finished_at + timedelta(hours=settings.result_ttl_hours)
-    _record(
-        session, job, JobStatus.finished, progress=100,
-        exit_code=code, watermark_type=watermark,
-    )
-    user = session.get(User, job.user_id)
-    if user:
-        user.videos_processed += 1
-        session.commit()
+    user = session.get(User, job.user_id) if job.user_id else None
+    if job.guest_session_id:
+        ttl_hours = settings.guest_result_ttl_hours
+    elif user and user.plan == Plan.pro.value:
+        ttl_hours = settings.pro_result_ttl_hours
+    else:
+        ttl_hours = settings.result_ttl_hours
+    job.expires_at = job.finished_at + timedelta(hours=ttl_hours)
 
     mid = float(job.duration_sec or 2) / 2
     thumb_paths = _thumbs_parallel(in_path, out_path, out_dir, mid, job.width)
@@ -225,12 +226,14 @@ def _finish_success(session, job: Job, in_path, out_path, out_dir, code, waterma
             job.thumb_before = key
         else:
             job.thumb_after = key
-    session.commit()
-    if thumb_paths:
-        publish_event(
-            job.id,
-            {"status": "finished", "progress": 100, "has_preview": bool(job.thumb_after)},
-        )
+
+    _record(
+        session, job, JobStatus.finished, progress=100,
+        exit_code=code, watermark_type=watermark,
+    )
+    if user:
+        user.videos_processed += 1
+        session.commit()
 
     storage.save_to_cache(job.sha256, out_dir)
     storage.remove_input(job.id)
@@ -300,6 +303,18 @@ def process_job(self, job_id: str) -> None:
 
         if job.status != JobStatus.finished:
             storage.remove_input(job.id)
+
+
+@celery.task(name="app.tasks.reset_monthly_credits")
+def reset_monthly_credits() -> int:
+    from .credits import reset_all_monthly_credits
+
+    run_sync_migrations()
+    with SyncSessionLocal() as session:
+        count = reset_all_monthly_credits(session)
+    if count:
+        _log.info("reset_monthly_credits: refreshed %d free account(s)", count)
+    return count
 
 
 @celery.task(name="app.tasks.cleanup_expired")

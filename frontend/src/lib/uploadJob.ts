@@ -4,7 +4,8 @@ export interface UploadJobResult {
   eta_sec?: number | null;
 }
 
-export function uploadVideo(
+function uploadTo(
+  url: string,
   file: File,
   onProgress?: (pct: number) => void
 ): Promise<UploadJobResult> {
@@ -12,7 +13,7 @@ export function uploadVideo(
     const fd = new FormData();
     fd.append("file", file);
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/v1/jobs");
+    xhr.open("POST", url);
     xhr.withCredentials = true;
     xhr.upload.onprogress = (ev) => {
       if (ev.lengthComputable && onProgress) {
@@ -31,4 +32,12 @@ export function uploadVideo(
     xhr.onerror = () => reject(new Error("Network error"));
     xhr.send(fd);
   });
+}
+
+export function uploadVideo(file: File, onProgress?: (pct: number) => void) {
+  return uploadTo("/v1/jobs", file, onProgress);
+}
+
+export function uploadGuestVideo(file: File, onProgress?: (pct: number) => void) {
+  return uploadTo("/v1/guest/jobs", file, onProgress);
 }

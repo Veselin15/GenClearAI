@@ -6,9 +6,9 @@ export function LandingCta() {
       <div className="lp-final-cta-glow" aria-hidden />
       <div className="container lp-final-cta-inner card">
         <div>
-          <h2>Your next clip could be watermark-free in minutes.</h2>
+          <h2>Remove your Gemini video watermark in minutes.</h2>
           <p className="muted">
-            Scroll up to paste or drop your video. Free account with 3 videos — no credit card.
+            Scroll up to paste or drop your clip. First clean is free — no login, no credit card.
           </p>
         </div>
         <div className="lp-final-cta-actions">
