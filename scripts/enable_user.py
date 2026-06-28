@@ -26,6 +26,12 @@ def main() -> None:
     with SyncSessionLocal() as session:
         user = session.query(User).filter(User.email == email).first()
         if user is None:
+            user = (
+                session.query(User)
+                .filter(User.email.ilike(email))
+                .first()
+            )
+        if user is None:
             sys.exit(f"no user found for {email}")
 
         if args.delete:

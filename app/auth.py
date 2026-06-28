@@ -112,7 +112,7 @@ async def current_user(
     db: AsyncSession = Depends(get_db),
 ) -> User:
     user = await _lookup(db, genclear_session, authorization)
-    if user is None or not user.is_active:
+    if user is None or user.is_active is False:
         raise HTTPException(401, "not authenticated")
     return user
 
@@ -123,6 +123,6 @@ async def optional_user(
     db: AsyncSession = Depends(get_db),
 ) -> User | None:
     user = await _lookup(db, genclear_session, authorization)
-    if user is None or not user.is_active:
+    if user is None or user.is_active is False:
         return None
     return user

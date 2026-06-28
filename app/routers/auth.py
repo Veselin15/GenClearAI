@@ -134,8 +134,10 @@ async def google_callback(request: Request, response: Response, db: AsyncSession
             )
             db.add(user)
 
-    if not user.is_active:
+    if user.is_active is False:
         raise HTTPException(403, "account disabled")
+    if user.is_active is None:
+        user.is_active = True
 
     _apply_monthly_credits(user)
     await db.commit()
@@ -197,7 +199,7 @@ async def login(
     user = await db.scalar(select(User).where(User.email == payload.email.lower()))
     if user is None or not verify_password(payload.password, user.password_hash):
         raise HTTPException(401, "invalid email or password")
-    if not user.is_active:
+    if user.is_active is False:
         raise HTTPException(403, "account disabled")
     reset = _apply_monthly_credits(user)
     if reset:

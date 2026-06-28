@@ -17,6 +17,7 @@ _PATCHES = [
   "ALTER TABLE users ADD COLUMN IF NOT EXISTS credits_reset_at TIMESTAMPTZ",
   "ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR(64)",
   "ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id VARCHAR(64)",
+  "UPDATE users SET is_active = true WHERE is_active IS NULL",
 ]
 
 
