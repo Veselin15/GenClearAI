@@ -64,7 +64,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(SessionMiddleware, secret_key=settings.secret_key)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.secret_key,
+    https_only=settings.cookie_secure,
+    same_site="lax",
+    domain=settings.session_cookie_domain,
+)
 
 if settings.cors_origin_list:
     app.add_middleware(

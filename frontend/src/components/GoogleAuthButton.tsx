@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
+import { SITE_URL } from "@/lib/site";
 
 export function GoogleAuthButton({ label = "Continue with Google" }: { label?: string }) {
-  const href = `${API_BASE}/api/auth/google`;
+  // Always start OAuth on the canonical site origin so the session cookie domain
+  // matches Google's redirect URI (apex vs www mismatch breaks the callback).
+  const href = `${SITE_URL}/api/auth/google`;
   return (
     <a href={href} className="btn btn-google btn-block">
       <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden>

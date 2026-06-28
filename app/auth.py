@@ -38,32 +38,37 @@ def verify_password(password: str, hashed: str | None) -> bool:
 
 # --- session cookies ------------------------------------------------------
 def issue_session(response: Response, user_id) -> None:
-    response.set_cookie(
-        COOKIE_NAME,
-        _session.dumps(str(user_id)),
+    kwargs: dict = dict(
         max_age=settings.session_max_age,
         httponly=True,
         samesite="lax",
         secure=settings.cookie_secure,
         path="/",
     )
+    if settings.session_cookie_domain:
+        kwargs["domain"] = settings.session_cookie_domain
+    response.set_cookie(COOKIE_NAME, _session.dumps(str(user_id)), **kwargs)
 
 
 def clear_session(response: Response) -> None:
-    response.delete_cookie(COOKIE_NAME, path="/")
+    kwargs: dict = {"path": "/"}
+    if settings.session_cookie_domain:
+        kwargs["domain"] = settings.session_cookie_domain
+    response.delete_cookie(COOKIE_NAME, **kwargs)
 
 
 # --- guest session cookies (anonymous PLG tier) ---------------------------
 def issue_guest_session(response: Response, guest_id: str) -> None:
-    response.set_cookie(
-        GUEST_COOKIE_NAME,
-        _guest.dumps(guest_id),
+    kwargs: dict = dict(
         max_age=30 * 24 * 3600,
         httponly=True,
         samesite="lax",
         secure=settings.cookie_secure,
         path="/",
     )
+    if settings.session_cookie_domain:
+        kwargs["domain"] = settings.session_cookie_domain
+    response.set_cookie(GUEST_COOKIE_NAME, _guest.dumps(guest_id), **kwargs)
 
 
 def guest_id_from_token(token: str | None) -> str | None:

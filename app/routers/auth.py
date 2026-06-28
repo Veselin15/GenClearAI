@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
+import logging
 
+from authlib.integrations.base_client.errors import OAuthError
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
@@ -34,8 +36,11 @@ from ..schemas import (
 )
 from ..security import generate_api_key, generate_referral_code, hash_api_key
 
+from ..oauth import GOOGLE_USERINFO_URL, oauth
+
 settings = get_settings()
 router = APIRouter(prefix="/api")
+log = logging.getLogger(__name__)
 
 
 async def _me(user: User, db: AsyncSession) -> MeOut:
@@ -67,21 +72,20 @@ def _maybe_daily_bonus(user: User) -> int:
     return 0
 
 
+async def _google_profile(token: dict) -> dict:
+    info = token.get("userinfo")
+    if info:
+        return info
+    resp = await oauth.google.get(GOOGLE_USERINFO_URL, token=token)
+    resp.raise_for_status()
+    return resp.json()
+
+
 @router.get("/auth/google")
 async def google_login(request: Request):
     if not settings.google_client_id:
         raise HTTPException(503, "Google sign-in is not configured")
-    from authlib.integrations.starlette_client import OAuth
-
-    oauth = OAuth()
-    oauth.register(
-        name="google",
-        client_id=settings.google_client_id,
-        client_secret=settings.google_client_secret,
-        server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
-        client_kwargs={"scope": "openid email profile"},
-    )
-    redirect_uri = f"{settings.api_base_url}/api/auth/google/callback"
+    redirect_uri = f"{settings.api_base_url.rstrip('/')}/api/auth/google/callback"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 
@@ -89,19 +93,22 @@ async def google_login(request: Request):
 async def google_callback(request: Request, response: Response, db: AsyncSession = Depends(get_db)):
     if not settings.google_client_id:
         raise HTTPException(503, "Google sign-in is not configured")
-    from authlib.integrations.starlette_client import OAuth
+    try:
+        token = await oauth.google.authorize_access_token(request)
+    except OAuthError as exc:
+        log.warning("Google OAuth token exchange failed: %s", exc)
+        raise HTTPException(
+            400,
+            "Google sign-in expired or was interrupted — please try again from the login page",
+        ) from exc
 
-    oauth = OAuth()
-    oauth.register(
-        name="google",
-        client_id=settings.google_client_id,
-        client_secret=settings.google_client_secret,
-        server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
-        client_kwargs={"scope": "openid email profile"},
-    )
-    token = await oauth.google.authorize_access_token(request)
-    info = token.get("userinfo") or await oauth.google.parse_id_token(request, token)
-    if not info or not info.get("email"):
+    try:
+        info = await _google_profile(token)
+    except Exception as exc:
+        log.exception("Google userinfo fetch failed")
+        raise HTTPException(400, "could not retrieve Google profile") from exc
+
+    if not info.get("email"):
         raise HTTPException(400, "could not retrieve Google profile")
 
     email = info["email"].lower()

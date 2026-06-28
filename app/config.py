@@ -103,6 +103,19 @@ class Settings(BaseSettings):
     ensure_output_resolution: bool = True       # upscale/re-encode if tool shrinks frames
 
     @property
+    def session_cookie_domain(self) -> str | None:
+        """Share session cookies across apex + www in production."""
+        if not self.cookie_secure:
+            return None
+        from urllib.parse import urlparse
+
+        host = urlparse(self.frontend_url).hostname or ""
+        if not host or host in ("localhost", "127.0.0.1"):
+            return None
+        base = host.removeprefix("www.")
+        return f".{base}" if "." in base else None
+
+    @property
     def cors_origin_list(self) -> list[str]:
         if not self.cors_origins.strip():
             return []
