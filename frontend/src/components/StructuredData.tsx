@@ -1,4 +1,5 @@
 import { BRAND_ICON } from "@/components/BrandLogo";
+import { CURRENCY, PRO_PRICE_MONTHLY } from "@/lib/pricing";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 
 interface Faq {
@@ -50,13 +51,14 @@ export function StructuredData({ faq }: { faq: Faq[] }) {
           "@type": "Offer",
           name: "Free",
           price: "0",
-          priceCurrency: "USD",
+          priceCurrency: CURRENCY,
           description: "3 free videos on signup, +1 credit each day you return.",
         },
         {
           "@type": "Offer",
           name: "Pro",
-          priceCurrency: "USD",
+          price: String(PRO_PRICE_MONTHLY),
+          priceCurrency: CURRENCY,
           description: "Unlimited videos, priority queue, and API access.",
         },
       ],

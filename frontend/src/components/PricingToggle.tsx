@@ -2,6 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import {
+  formatPrice,
+  PRO_PRICE_MONTHLY,
+  PRO_PRICE_YEARLY_PER_MONTH,
+  PRO_PRICE_YEARLY_TOTAL,
+} from "@/lib/pricing";
 
 const FREE_FEATURES = [
   "1 free anonymous clean — no signup",
@@ -21,9 +27,8 @@ const PRO_FEATURES = [
 
 export function PricingToggle() {
   const [yearly, setYearly] = useState(false);
-  const proPrice = yearly ? 7 : 9;
+  const proPrice = yearly ? PRO_PRICE_YEARLY_PER_MONTH : PRO_PRICE_MONTHLY;
   const proLabel = yearly ? "/ mo, billed yearly" : "/ month";
-  const yearlyTotal = yearly ? 84 : null;
 
   return (
     <>
@@ -40,7 +45,7 @@ export function PricingToggle() {
         <div className="card plan">
           <h3>Free</h3>
           <p className="lp-plan-desc muted">Try GenClear with full-quality output.</p>
-          <div className="price">$0<span> / month</span></div>
+          <div className="price">{formatPrice(0)}<span> / month</span></div>
           <ul>
             {FREE_FEATURES.map((f) => (
               <li key={f} dangerouslySetInnerHTML={{ __html: f }} />
@@ -52,8 +57,12 @@ export function PricingToggle() {
           <span className="pill pill-pro tag">Most popular</span>
           <h3>Pro</h3>
           <p className="lp-plan-desc muted">For agencies and teams shipping AI video to clients every week.</p>
-          <div className="price">${proPrice}<span>{proLabel}</span></div>
-          {yearlyTotal && <p className="lp-yearly-total muted">${yearlyTotal}/year · cancel anytime</p>}
+          <div className="price">{formatPrice(proPrice)}<span>{proLabel}</span></div>
+          {yearly && (
+            <p className="lp-yearly-total muted">
+              {formatPrice(PRO_PRICE_YEARLY_TOTAL)}/year · cancel anytime
+            </p>
+          )}
           <ul>
             {PRO_FEATURES.map((f) => (
               <li key={f} dangerouslySetInnerHTML={{ __html: f }} />

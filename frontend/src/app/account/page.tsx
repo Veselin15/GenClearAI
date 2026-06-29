@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { User } from "@/lib/types";
 import { api, fmtDate, getUserSummary, openBillingPortal, startCheckout } from "@/lib/api";
+import { formatPrice, PRO_PRICE_MONTHLY, PRO_PRICE_YEARLY_PER_MONTH } from "@/lib/pricing";
 import { TopNav } from "@/components/TopNav";
 import { PageHeader } from "@/components/PageHeader";
 import { PageLoader } from "@/components/PageLoader";
@@ -197,7 +198,7 @@ export default function AccountPage() {
               <div className="kv"><span className="k">Member since</span><span>{fmtDate(user.created_at)}</span></div>
               {user.plan !== "pro" && (
                 <button className="btn btn-primary btn-block" style={{ marginTop: 18 }} onClick={() => setShowUpgrade(true)} type="button">
-                  Upgrade to Pro — $9/mo
+                  Upgrade to Pro — {formatPrice(PRO_PRICE_MONTHLY)}/mo
                 </button>
               )}
               {user.plan === "pro" && (
@@ -234,8 +235,8 @@ export default function AccountPage() {
               Unlimited videos, priority queue, API access, and instant file purge for client privacy.
             </p>
             <div className="pricing-toggle" style={{ marginBottom: 16 }}>
-              <button type="button" className={!upgradeYearly ? "active" : ""} onClick={() => setUpgradeYearly(false)}>Monthly $9</button>
-              <button type="button" className={upgradeYearly ? "active" : ""} onClick={() => setUpgradeYearly(true)}>Yearly $7/mo</button>
+              <button type="button" className={!upgradeYearly ? "active" : ""} onClick={() => setUpgradeYearly(false)}>Monthly {formatPrice(PRO_PRICE_MONTHLY)}</button>
+              <button type="button" className={upgradeYearly ? "active" : ""} onClick={() => setUpgradeYearly(true)}>Yearly {formatPrice(PRO_PRICE_YEARLY_PER_MONTH)}/mo</button>
             </div>
             <button className="btn btn-primary btn-block" onClick={handleUpgrade} disabled={checkoutLoading} type="button">
               {checkoutLoading ? "Redirecting to checkout…" : "Continue to Stripe"}

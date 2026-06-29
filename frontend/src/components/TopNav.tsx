@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import type { User } from "@/lib/types";
-import { creditLabel } from "@/lib/api";
+import { creditLabel, getMe } from "@/lib/api";
 import { BrandLink } from "@/components/BrandLogo";
 import { MobileNav } from "./MobileNav";
 
@@ -12,8 +13,23 @@ interface NavProps {
   variant?: "landing" | "app";
 }
 
-export function TopNav({ user, variant = "landing" }: NavProps) {
+export function TopNav({ user: userProp, variant = "landing" }: NavProps) {
+  const [user, setUser] = useState<User | null>(userProp ?? null);
+
+  useEffect(() => {
+    if (userProp !== undefined) {
+      setUser(userProp);
+      return;
+    }
+    if (variant === "landing") {
+      getMe()
+        .then(setUser)
+        .catch(() => setUser(null));
+    }
+  }, [userProp, variant]);
+
   if (variant === "landing") {
+    const authed = !!user;
     return (
       <header className="topbar lp-topbar" role="banner">
         <div className="topbar-inner lp-topbar-inner">
@@ -22,13 +38,33 @@ export function TopNav({ user, variant = "landing" }: NavProps) {
             <Link href="/#compare">Why us</Link>
             <Link href="/#pricing">Pricing</Link>
             <Link href="/developers">API</Link>
+            {authed && (
+              <>
+                <Link href="/app">Dashboard</Link>
+                <Link href="/account">Account</Link>
+              </>
+            )}
           </nav>
           <div className="nav-right">
-            <div className="nav-desktop" style={{ display: "flex", gap: 8 }}>
-              <Link className="btn btn-ghost btn-sm" href="/login">Sign in</Link>
-              <Link className="btn btn-primary btn-sm" href="/register">Get started</Link>
+            <div className="nav-desktop" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              {authed ? (
+                <>
+                  <span className={`pill ${user!.plan === "pro" ? "pill-pro" : ""}`}>
+                    {creditLabel(user!)}
+                  </span>
+                  <LogoutButton />
+                </>
+              ) : (
+                <>
+                  <Link className="btn btn-ghost btn-sm" href="/login">Sign in</Link>
+                  <Link className="btn btn-primary btn-sm" href="/register">Get started</Link>
+                </>
+              )}
             </div>
-            <MobileNav variant="landing" />
+            <MobileNav
+              variant={authed ? "app" : "landing"}
+              userPlan={authed ? creditLabel(user!) : undefined}
+            />
           </div>
         </div>
       </header>
